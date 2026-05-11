@@ -22,6 +22,9 @@
 #include <vector>
 #include <pthread.h>
 #include <windows.h>
+#include <conio.h>
+#include <time.h>
+#include <map>
 
 pthread_mutex_t mutex;
 
@@ -45,6 +48,27 @@ struct Mapa {
     int alto;
     int largo;
     char** mapa;
+}
+
+struct Bomba {
+    int distancia; 
+    int x;
+    int y;
+}
+
+struct Muro {
+    int x;
+    int y;
+    bool destructible;
+
+}
+
+struct Juego {
+    Mapa mapa;
+    std::vector<Jugador> jugadores;
+    std::vector<Enemigo> enemigos;
+    std::vector<Bomba> bombas;
+    std::vector<Muro> muros;
 }
 
 int main() {
