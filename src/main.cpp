@@ -3,13 +3,13 @@
 * main.cpp
 *-----------------------------------------------------------
 * UNIVERSIDAD DEL VALLE DE GUATEMALA
-* FACULTAD DE INGENIERÍA
-* DEPARTAMENTO DE CIENCIA DE LA COMPUTACIÓN
+* FACULTAD DE INGENIERIA
+* DEPARTAMENTO DE CIENCIA DE LA COMPUTACION
 *
 * CC3086 - Programacion de Microprocesadores
 *
 *-----------------------------------------------------------
-* Descripción: Juego de Bomberman
+* Descripcion: Juego de Bomberman
 *-----------------------------------------------------------
 */
 
@@ -106,7 +106,7 @@ void inicializarMapa(Juego &j) {
     j.mapa.alto = 15;
     j.mapa.largo = 31;
     
-    //Asignación de memoria para el mapa
+    //Asignacion de memoria para el mapa
     j.mapa.posiciones = new char*[j.mapa.alto];
     for (int i = 0; i < j.mapa.alto; i++) {
         j.mapa.posiciones[i] = new char[j.mapa.largo];
@@ -184,10 +184,10 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
             j.mapa.posiciones[oldY][oldX] = 'O'; // caracter ASCII O
         }
         else {
-            j.mapa.posiciones[oldY][oldX] = ' '; // Limpiar la posición anterior
+            j.mapa.posiciones[oldY][oldX] = ' '; // Limpiar la posicion anterior
         }
 
-        // Actualizar la posición del jugador en el mapa
+        // Actualizar la posicion del jugador en el mapa
         j.jugadores[jugador].x = newX;
         j.jugadores[jugador].y = newY;
         j.mapa.posiciones[newY][newX] = '@'; // caracter ASCII @
@@ -334,7 +334,7 @@ int main() {
     Juego bomberman;
     pthread_mutex_init(&mutex, NULL);
     
-    //configuración de ncurses
+    //configuracion de ncurses
     initscr();             // Inicia ncurses
     noecho();              // ocultar las letras que se presionan
     curs_set(0);           // Oculta el cursor
@@ -343,8 +343,8 @@ int main() {
     // Inicializar el mapa y los jugadores
     inicializarMapa(bomberman);
     inicializarJugadores(bomberman);
-    bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@'; // caracter ASCII @
-    bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '@'; // caracter ASCII @
+    bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
+    bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '%';
 
     // Bucle principal del juego
     bool jugando = true;
@@ -375,6 +375,3 @@ int main() {
     pthread_mutex_destroy(&mutex);
     return 0;
 };
-
-
-
