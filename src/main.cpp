@@ -139,7 +139,7 @@ void inicializarMapa(Juego &j) {
 };
 
 void dibujarMapa(const Juego &j) {
-    clear();
+    erase();
 
     for (int y = 0; y < j.mapa.alto; y++) {
         for (int x = 0; x < j.mapa.largo; x++) {
@@ -290,7 +290,6 @@ void* hiloBomba(void* arg) {
 
     eliminarBomba(*datos->juego, datos->bomba);
     explotarBomba(*datos->juego, datos->bomba);
-    dibujarMapa(*datos->juego);
 
     pthread_mutex_unlock(&mutex);
 
@@ -299,7 +298,6 @@ void* hiloBomba(void* arg) {
     pthread_mutex_lock(&mutex);
 
     limpiarExplosion(*datos->juego);
-    dibujarMapa(*datos->juego);
 
     pthread_mutex_unlock(&mutex);
 
@@ -340,37 +338,123 @@ int main() {
     curs_set(0);           // Oculta el cursor
     keypad(stdscr, TRUE);  // Habilita las flechas del teclado
 
-    // Inicializar el mapa y los jugadores
-    inicializarMapa(bomberman);
-    inicializarJugadores(bomberman);
-    bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
-    bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '%';
+    const char* titulo = R"( 
+ /$$$$$$$                          /$$                                                            
+| $$__  $$                        | $$                                                            
+| $$  \ $$  /$$$$$$  /$$$$$$/$$$$ | $$$$$$$   /$$$$$$   /$$$$$$  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ 
+| $$$$$$$  /$$__  $$| $$_  $$_  $$| $$__  $$ /$$__  $$ /$$__  $$| $$_  $$_  $$ |____  $$| $$__  $$
+| $$__  $$| $$  \ $$| $$ \ $$ \ $$| $$  \ $$| $$$$$$$$| $$  \__/| $$ \ $$ \ $$  /$$$$$$$| $$  \ $$
+| $$  \ $$| $$  | $$| $$ | $$ | $$| $$  | $$| $$_____/| $$      | $$ | $$ | $$ /$$__  $$| $$  | $$
+| $$$$$$$/|  $$$$$$/| $$ | $$ | $$| $$$$$$$/|  $$$$$$$| $$      | $$ | $$ | $$|  $$$$$$$| $$  | $$
+|_______/  \______/ |__/ |__/ |__/|_______/  \_______/|__/      |__/ |__/ |__/ \_______/|__/  |__/
+                                                                                                  
+                                                                                                  
+                                                                                                  )";
+    vector<string> opciones = {"Un jugador", "Dos jugadores", "Controles", "Puntajes", "Salir"};
+    int input;
+    int seleccion = 0;
+    bool menu = true;
 
-    // Bucle principal del juego
-    bool jugando = true;
-    while(jugando) {
-        dibujarMapa(bomberman);
-
-        int ch = getch(); //Detecta la tecla presionada
-        switch(ch) {
-            // P1: WASD
-            case 'w': case 'W': moverJugador(bomberman, 0, 0, -1); break;
-            case 's': case 'S': moverJugador(bomberman, 0, 0, 1); break;
-            case 'a': case 'A': moverJugador(bomberman, 0, -1, 0); break;
-            case 'd': case 'D': moverJugador(bomberman, 0, 1, 0); break;
-            case 'e': case 'E': colocarBomba(bomberman, 0); break; // bomba jugador 1
-
-            // P2: IJKL
-            case 'i': case 'I': moverJugador(bomberman, 1, 0, -1); break;
-            case 'k': case 'K': moverJugador(bomberman, 1, 0, 1); break;
-            case 'j': case 'J': moverJugador(bomberman, 1, -1, 0); break;
-            case 'l': case 'L': moverJugador(bomberman, 1, 1, 0); break;
-            case 'o': case 'O': colocarBomba(bomberman, 1); break; // bomba jugador 2
-
-            case '0': jugando = false; break; // Salir
+    while(menu){
+    erase();
+    //Menu de inicio
+    mvprintw(0, 12, "%s", titulo);
+    for(int i=13; i<13+opciones.size(); i++){
+        if (i == seleccion + 13) {
+            attron(A_REVERSE); // Resalta la opcion seleccionada
+            mvprintw(i, 40, "%s", opciones[i - 13].c_str());
+            attroff(A_REVERSE); // Quita el resaltado
+        } else {
+            mvprintw(i, 40, "%s", opciones[i - 13].c_str());
         }
     }
+    refresh();
+    input = getch();
+    if (input == KEY_UP && seleccion > 0) {
+        seleccion--;
+    } else if (input == KEY_DOWN && seleccion < opciones.size() - 1) {
+        seleccion++;
+    } else if (input == 10) { // Enter presionado
 
+        //bucle de juego segun la opcion seleccionada
+        bool jugando = true;
+        switch(opciones[seleccion].c_str()[0]) {
+            case 'U': // Un jugador
+                // Inicializar el mapa y los jugadores
+                inicializarMapa(bomberman);
+                inicializarJugadores(bomberman);
+                bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
+                timeout(50);
+                while(jugando) {
+                    dibujarMapa(bomberman);
+
+                    int ch = getch(); //Detecta la tecla presionada
+                    switch(ch) {
+                        // P1: WASD
+                        case 'w': case 'W': moverJugador(bomberman, 0, 0, -1); break;
+                        case 's': case 'S': moverJugador(bomberman, 0, 0, 1); break;
+                        case 'a': case 'A': moverJugador(bomberman, 0, -1, 0); break;
+                        case 'd': case 'D': moverJugador(bomberman, 0, 1, 0); break;
+                        case 'e': case 'E': colocarBomba(bomberman, 0); break; // bomba jugador 1
+                        case 'y': case 'Y': jugando = false; break; // Salir
+                    }
+                }
+                break;
+            case 'D': // Dos jugadores
+                // Inicializar el mapa y los jugadores
+                inicializarMapa(bomberman);
+                inicializarJugadores(bomberman);
+                bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
+                bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '@';
+
+                // Bucle principal del juego
+                timeout(50);
+                while(jugando) {
+                    dibujarMapa(bomberman);
+
+                    int ch = getch(); //Detecta la tecla presionada
+                    switch(ch) {
+                        // P1: WASD
+                        case 'w': case 'W': moverJugador(bomberman, 0, 0, -1); break;
+                        case 's': case 'S': moverJugador(bomberman, 0, 0, 1); break;
+                        case 'a': case 'A': moverJugador(bomberman, 0, -1, 0); break;
+                        case 'd': case 'D': moverJugador(bomberman, 0, 1, 0); break;
+                        case 'e': case 'E': colocarBomba(bomberman, 0); break; // bomba jugador 1
+
+                        // P2: IJKL
+                        case 'i': case 'I': moverJugador(bomberman, 1, 0, -1); break;
+                        case 'k': case 'K': moverJugador(bomberman, 1, 0, 1); break;
+                        case 'j': case 'J': moverJugador(bomberman, 1, -1, 0); break;
+                        case 'l': case 'L': moverJugador(bomberman, 1, 1, 0); break;
+                        case 'o': case 'O': colocarBomba(bomberman, 1); break; // bomba jugador 2
+
+                        case 'y': case 'Y': jugando = false; break; // Salir
+                    }
+                }
+                break;
+            case 'C': // Controles
+                clear();
+                mvprintw(5, 10, "Controles:");
+                mvprintw(7, 12, "Jugador 1: W (arriba), A (izquierda), S (abajo), D (derecha), E (colocar bomba)");
+                mvprintw(9, 12, "Jugador 2: I (arriba), J (izquierda), K (abajo), L (derecha), O (colocar bomba)");
+                mvprintw(11, 12, "Salir del juego: Presiona 'Y' durante el juego");
+                mvprintw(13, 12, "Presiona cualquier tecla para volver al menu...");
+                getch();
+                break;
+            case 'P': //puntajes
+                clear();
+                mvprintw(5, 10, "Puntajes:");
+                // Mostrar puntajes aquí
+                mvprintw(11, 12, "Presiona cualquier tecla para volver al menu...");
+                getch();
+                break;
+            case 'S': // Salir
+                jugando = false;
+                menu = false;
+                break;
+            }
+        }
+    }
     endwin(); // Termina ncurses
     pthread_mutex_destroy(&mutex);
     return 0;
