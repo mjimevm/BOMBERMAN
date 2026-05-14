@@ -433,6 +433,7 @@ int main() {
                 }
                 break;
             case 'C': // Controles
+                timeout(-1); // Espera indefinidamente por una tecla
                 clear();
                 mvprintw(5, 10, "Controles:");
                 mvprintw(7, 12, "Jugador 1: W (arriba), A (izquierda), S (abajo), D (derecha), E (colocar bomba)");
@@ -440,13 +441,16 @@ int main() {
                 mvprintw(11, 12, "Salir del juego: Presiona 'Y' durante el juego");
                 mvprintw(13, 12, "Presiona cualquier tecla para volver al menu...");
                 getch();
+                timeout(50); // Vuelve a esperar 50ms para el juego
                 break;
             case 'P': //puntajes
+                timeout(-1); // Espera indefinidamente por una tecla
                 clear();
                 mvprintw(5, 10, "Puntajes:");
                 // Mostrar puntajes aquí
                 mvprintw(11, 12, "Presiona cualquier tecla para volver al menu...");
                 getch();
+                timeout(50); // Vuelve a esperar 50ms para el juego
                 break;
             case 'S': // Salir
                 jugando = false;
