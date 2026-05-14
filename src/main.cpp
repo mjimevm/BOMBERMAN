@@ -344,7 +344,7 @@ int main() {
     inicializarMapa(bomberman);
     inicializarJugadores(bomberman);
     bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
-    bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '%';
+    bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '@';
 
     // Bucle principal del juego
     bool jugando = true;
