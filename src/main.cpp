@@ -94,16 +94,6 @@ bool zonaSalida(int x, int y) {
         return true;
     }
 
-    // esquina inferior izquierda
-    if ((x >= 1 && x <= 3) && (y >= 11 && y <= 13)) {
-        return true;
-    }
-
-    // esquina superior derecha
-    if ((x >= 27 && x <= 29) && (y >= 1 && y <= 3)) {
-        return true;
-    }
-
     // esquina inferior derecha
     if ((x >= 27 && x <= 29) && (y >= 11 && y <= 13)) {
         return true;
