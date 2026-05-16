@@ -22,17 +22,18 @@
 #include <chrono>
 #include <ncurses.h>
 #include <random>
+#include <tuple>
 
 using namespace std;
 
-// Mutex para sincronización entre hilos
+// Mutex para sincronizaciï¿½n entre hilos
 pthread_mutex_t mutex;
 
 //Semaforo
 sem_t sem1;
 sem_t sem2;
 
-// Generadores de números aleatorios
+// Generadores de nï¿½meros aleatorios
 random_device rd; 
 mt19937 gen(rd()); 
 uniform_int_distribution<> randAlto(1, 13);
@@ -102,7 +103,7 @@ struct Juego {
     vector<Enemigo> enemigos;
     vector<Bomba> bombas;
     vector<Muro> muros;
-    vector<pair<int, int>> powerups;
+    vector<tuple<int, int, char>> powerups;
     int rangoBombas = 1;
     
     int nivel = 1;
@@ -115,13 +116,13 @@ struct Juego {
     bool enModoMultijugador = false;
 };
 
-// Estructura para datos de explosión
+// Estructura para datos de explosiï¿½n
 struct Explosion {
     Juego* juego;
     Bomba bomba;
 };
 
-// Inicializa los jugadores según el modo
+// Inicializa los jugadores segï¿½n el modo
 void inicializarJugadores(Juego &j, bool modoUnJugador) {
     j.jugadores.clear();
     if (modoUnJugador) {
@@ -139,7 +140,7 @@ void inicializarJugadores(Juego &j, bool modoUnJugador) {
     }
 };
 
-// Verifica si una posición está en zona de salida segura
+// Verifica si una posiciï¿½n estï¿½ en zona de salida segura
 bool zonaSalida(int x, int y) {
     if ((x >= 1 && x <= 3) && (y >= 1 && y <= 3)) {
         return true;
@@ -152,7 +153,7 @@ bool zonaSalida(int x, int y) {
     return false;
 }
 
-// Crea el mapa con muros y espacios vacíos
+// Crea el mapa con muros y espacios vacï¿½os
 void inicializarMapa(Juego &j) {
     j.mapa.alto = 15;
     j.mapa.largo = 31;
@@ -168,11 +169,11 @@ void inicializarMapa(Juego &j) {
             if (y == 0 || y == j.mapa.alto -1 || x == 0 || x == j.mapa.largo - 1) {
                 j.mapa.posiciones[y][x] = '=';
             } 
-            // Patrón de tablero: muros indestructibles en posiciones pares
+            // Patrï¿½n de tablero: muros indestructibles en posiciones pares
             else if (y % 2 == 0 && x % 2 == 0) { 
                 j.mapa.posiciones[y][x] = '=';
             } 
-            // Resto: muros destructibles aleatorios o espacios vacíos
+            // Resto: muros destructibles aleatorios o espacios vacï¿½os
             else {
                 if (zonaSalida(x, y)) {
                     j.mapa.posiciones[y][x] = ' ';
@@ -190,22 +191,17 @@ void inicializarMapa(Juego &j) {
 //Coloca powerups aleatoriamente
 void colocarPowerups(Juego &j) {
     j.powerups.clear();
-
     while (j.powerups.size() < 2) {
         int x = randLargo(gen);
         int y = randAlto(gen);
-
         if (j.mapa.posiciones[y][x] == '#') {
             bool repetido = false;
-
-            for (int i = 0; i < j.powerups.size(); i++) {
-                if (j.powerups[i].first == x && j.powerups[i].second == y) {
-                    repetido = true;
-                }
-            }
-
+            for (auto& p : j.powerups)
+                if (get<0>(p)==x && get<1>(p)==y)
+                    repetido=true;
             if (!repetido) {
-                j.powerups.push_back({x, y});
+                char tipo = (rand1to9(gen) % 2 == 0) ? '$' : '+';
+                j.powerups.push_back({x, y, tipo});
             }
         }
     }
@@ -251,7 +247,7 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
     refresh();
 };
 
-// Verifica si hay bomba en una posición
+// Verifica si hay bomba en una posiciï¿½n
 bool hayBomba(Juego &j, int x, int y) {
     for (int i = 0; i < j.bombas.size(); i++) {
         if (j.bombas[i].x == x && j.bombas[i].y == y) {
@@ -272,7 +268,7 @@ void eliminarBomba(Juego &j, Bomba bomba) {
     }
 }
 
-//muestra una pantalla de muerte cuando un jugador recibe daño
+//muestra una pantalla de muerte cuando un jugador recibe daï¿½o
 void mostrarMuerteJugador(Juego &j, int jugador) {
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -302,7 +298,7 @@ bool hayEnemigoEn(Juego &j, int x, int y) {
     return false;
 }
 
-// Mueve un jugador en la dirección indicada
+// Mueve un jugador en la direcciï¿½n indicada
 void moverJugador(Juego &j, int jugador, int dx, int dy) {
     pthread_mutex_lock(&mutex);
 
@@ -330,9 +326,9 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
         pthread_mutex_unlock(&mutex);
         return;
     }
-    // Puede moverse a espacios vacíos o a la puerta si está abierta
-    if (celda == ' ' || celda == '$' || (!j.enModoMultijugador && j.puerta.abierta && j.puerta.x == newX && j.puerta.y == newY)) {
-        // Limpiar posición anterior
+    // Puede moverse a espacios vacï¿½os o a la puerta si estï¿½ abierta
+    if (celda == ' ' || celda == '$' || celda == '+' ||(!j.enModoMultijugador && j.puerta.abierta && j.puerta.x == newX && j.puerta.y == newY)) {
+        // Limpiar posicion anterior
         if (hayBomba(j, oldX, oldY)) {
             j.mapa.posiciones[oldY][oldX] = 'O';
         }
@@ -343,7 +339,10 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
         if (celda == '$') {
             j.rangoBombas++;
         }
-        // Actualizar posición
+        if (celda == '+') {
+            j.jugadores[jugador].vidas++;
+        }
+        // Actualizar posicin
         j.jugadores[jugador].x = newX;
         j.jugadores[jugador].y = newY;
         j.mapa.posiciones[newY][newX] = '@';
@@ -352,7 +351,7 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
     pthread_mutex_unlock(&mutex);
 };
 
-// Marca una celda como explosión
+// Marca una celda como explosiï¿½n
 void marcarExplosion(Juego &j, int x, int y) {
     if (x <= 0 || x >= j.mapa.largo - 1 || y <= 0 || y >= j.mapa.alto - 1) {
         return;
@@ -380,7 +379,7 @@ bool esCeldaLibreParaPuerta(const Juego& j, int x, int y) {
 void colocarPuertaLejosDelSpawn(Juego& j, int spawnX, int spawnY) {
     const int minDist = 20;
 
-    // Intenta hasta 2000 veces encontrar posición válida
+    // Intenta hasta 2000 veces encontrar posiciï¿½n vï¿½lida
     for (int t = 0; t < 2000; t++) {
         int x = randLargo(gen);
         int y = randAlto(gen);  
@@ -403,17 +402,18 @@ void colocarPuertaLejosDelSpawn(Juego& j, int spawnX, int spawnY) {
 
 //verifica si una pared tiene powerup
 bool revelarPowerup(Juego &j, int x, int y) {
-    for (int i = 0; i < j.powerups.size(); i++) {
-        if (j.powerups[i].first == x && j.powerups[i].second == y) {
-            j.mapa.posiciones[y][x] = '$';
+    for (size_t i = 0; i < j.powerups.size(); ++i) {
+        if (get<0>(j.powerups[i]) == x && get<1>(j.powerups[i]) == y) {
+            char tipo = get<2>(j.powerups[i]);
+            j.mapa.posiciones[y][x] = tipo; // pone $ o +
             j.powerups.erase(j.powerups.begin() + i);
             return true;
         }
     }
-
     return false;
 }
-// Expande explosión de bomba en 4 direcciones
+
+// Expande explosiï¿½n de bomba en 4 direcciones
 // Destruye muros y mata enemigos
 // En un jugador: abre puerta solo si mata K cuando no hay E
 void explotarBomba(Juego &j, Bomba bomba) {
@@ -421,7 +421,7 @@ void explotarBomba(Juego &j, Bomba bomba) {
 
     for (int i = 1; i <= bomba.distancia; i++) {
 
-        // Dirección derecha
+        // Direcciï¿½n derecha
         if (j.mapa.posiciones[bomba.y][bomba.x + i] == '#') {
             if (!revelarPowerup(j, bomba.x + i, bomba.y)) {
                 j.mapa.posiciones[bomba.y][bomba.x + i] = '*';
@@ -437,7 +437,7 @@ void explotarBomba(Juego &j, Bomba bomba) {
             marcarExplosion(j, bomba.x + i, bomba.y);
         }
 
-        // Dirección izquierda
+        // Direcciï¿½n izquierda
         if (j.mapa.posiciones[bomba.y][bomba.x - i] != '=') {
             if (j.mapa.posiciones[bomba.y][bomba.x - i] == '#') {
                 if (!revelarPowerup(j, bomba.x - i, bomba.y)) {
@@ -456,7 +456,7 @@ void explotarBomba(Juego &j, Bomba bomba) {
             }
         }
 
-        // Dirección abajo
+        // Direcciï¿½n abajo
         if (j.mapa.posiciones[bomba.y + i][bomba.x] != '=') {
             if (j.mapa.posiciones[bomba.y + i][bomba.x] == '#') {
                 if (!revelarPowerup(j, bomba.x, bomba.y + i)) {
@@ -474,7 +474,7 @@ void explotarBomba(Juego &j, Bomba bomba) {
             }
         }
 
-        // Dirección arriba
+        // Direcciï¿½n arriba
         if (j.mapa.posiciones[bomba.y - i][bomba.x] != '=') {
             if (j.mapa.posiciones[bomba.y - i][bomba.x] == '#') {
                 if (!revelarPowerup(j, bomba.x, bomba.y - i)) {
@@ -536,9 +536,9 @@ void explotarBomba(Juego &j, Bomba bomba) {
     }
 }
 
-// Limpia las marcas de explosión del mapa
+// Limpia las marcas de explosiï¿½n del mapa
 void limpiarExplosion(Juego &j, Bomba bomba) {
-    // Limpiar marcas de explosión
+    // Limpiar marcas de explosiï¿½n
     for (int y = 0; y < j.mapa.alto; y++) {
         for (int x = 0; x < j.mapa.largo; x++) {
             if (j.mapa.posiciones[y][x] == '*') {
@@ -571,7 +571,7 @@ void limpiarExplosion(Juego &j, Bomba bomba) {
     }
 }
 
-// Hilo que maneja la explosión de una bomba
+// Hilo que maneja la explosion de una bomba
 void* hiloBomba(void* arg) {
     Explosion* datos = (Explosion*) arg;
 
@@ -582,7 +582,7 @@ void* hiloBomba(void* arg) {
     eliminarBomba(*datos->juego, datos->bomba);
     explotarBomba(*datos->juego, datos->bomba);
 
-    // Quita vida si jugador está en explosión
+    // Quita vida si jugador esta en explosion
     for (int i = 0; i < datos->juego->jugadores.size(); ++i) {
         int px = datos->juego->jugadores[i].x;
         int py = datos->juego->jugadores[i].y;
@@ -597,7 +597,7 @@ void* hiloBomba(void* arg) {
 
     pthread_mutex_unlock(&mutex);
 
-    usleep(700000);  // Muestra explosión por 0.7 segundos
+    usleep(700000);  // Muestra explosiï¿½n por 0.7 segundos
 
     pthread_mutex_lock(&mutex);
 
@@ -609,7 +609,7 @@ void* hiloBomba(void* arg) {
     return NULL;
 }
 
-// Coloca una bomba en la posición del jugador
+// Coloca una bomba en la posiciï¿½n del jugador
 void colocarBomba(Juego &j, int jugador) {
     pthread_mutex_lock(&mutex);
 
@@ -647,7 +647,7 @@ void colocarBomba(Juego &j, int jugador) {
     j.bombas.push_back(bomba);
     j.mapa.posiciones[bomba.y][bomba.x] = 'O';
 
-    // Crear hilo para explosión
+    // Crear hilo para explosiï¿½n
     Explosion* datos = new Explosion;
     datos->juego = &j;
     datos->bomba = bomba;
@@ -688,7 +688,7 @@ void inicializarEnemigos(Juego& j, int cuantos) {
     // Crear enemigos
     for (int e = 0; e < cuantos; ++e) {
         int x, y;
-        // Encontrar posición libre
+        // Encontrar posiciï¿½n libre
         do {
             x = randLargo(gen);
             y = randAlto(gen);
@@ -716,11 +716,11 @@ void* hiloMovimientoEnemigos(void* arg) {
         
         // Mover cada enemigo
         for (int i = 0; i < datos->juego->enemigos.size(); i++) {
-            int dir = randDir(gen);  // Dirección random
+            int dir = randDir(gen);  // Direcciï¿½n random
             int newX = datos->juego->enemigos[i].x;
             int newY = datos->juego->enemigos[i].y;
             
-            // Calcular nueva posición
+            // Calcular nueva posiciï¿½n
             switch(dir) {
                 case 0: newY--; break;
                 case 1: newY++; break;
@@ -728,19 +728,19 @@ void* hiloMovimientoEnemigos(void* arg) {
                 case 3: newX++; break;
             }
             
-            // Validar movimiento (dentro del mapa y espacio vacío)
+            // Validar movimiento (dentro del mapa y espacio vacï¿½o)
             if (newX > 0 && newX < datos->juego->mapa.largo - 1 && 
                 newY > 0 && newY < datos->juego->mapa.alto - 1 &&
                 datos->juego->mapa.posiciones[newY][newX] == ' ') {
                 
-                // Limpiar posición anterior
+                // Limpiar posiciï¿½n anterior
                 datos->juego->mapa.posiciones[datos->juego->enemigos[i].y][datos->juego->enemigos[i].x] = ' ';
                 
-                // Actualizar posición
+                // Actualizar posiciï¿½n
                 datos->juego->enemigos[i].x = newX;
                 datos->juego->enemigos[i].y = newY;
                 
-                // Dibujar en nueva posición
+                // Dibujar en nueva posiciï¿½n
                 char charEnemigo = datos->juego->enemigos[i].tieneLlave ? 'K' : 'E';
                 datos->juego->mapa.posiciones[newY][newX] = charEnemigo;
             }
@@ -753,7 +753,7 @@ void* hiloMovimientoEnemigos(void* arg) {
     return NULL;
 }
 
-// Hilo del cronómetro que descuenta el tiempo
+// Hilo del cronï¿½metro que descuenta el tiempo
 void* hiloCronometro(void* arg) {
     DataJuego* datos = (DataJuego*) arg;
     
@@ -772,7 +772,7 @@ void* hiloCronometro(void* arg) {
 }
 
 // Hilo que controla ataques de enemigos
-// Quita vida si están en misma posición que jugador
+// Quita vida si estï¿½n en misma posiciï¿½n que jugador
 void* hiloAtaqueEnemigos(void* arg) {
     DataJuego* datos = (DataJuego*) arg;
     
@@ -781,7 +781,7 @@ void* hiloAtaqueEnemigos(void* arg) {
         
         pthread_mutex_lock(&mutex);
         
-        // Verificar colisión enemigo-jugador
+        // Verificar colisiï¿½n enemigo-jugador
         for (int i = 0; i < datos->juego->enemigos.size(); i++) {
             for (int j = 0; j < datos->juego->jugadores.size(); j++) {
                 if (datos->juego->enemigos[i].x == datos->juego->jugadores[j].x &&
@@ -798,7 +798,7 @@ void* hiloAtaqueEnemigos(void* arg) {
     return NULL;
 }
 
-// Verifica si un jugador está muerto
+// Verifica si un jugador estï¿½ muerto
 bool jugadorMuerto(const Jugador& jugador) {
     return jugador.vidas <= 0;
 }
@@ -883,60 +883,74 @@ int mostrarVictoriaUnJugador(Juego& j) {
     
     while(true) {
         int ch = getch();
-        // Verificar si presionó un número válido entre 1 y los niveles desbloqueados
+        // Verificar si presionï¿½ un nï¿½mero vï¿½lido entre 1 y los niveles desbloqueados
         if (ch >= '1' && ch <= ('0' + j.nivelMaximoDesbloqueado)) {
             return (ch - '0');
         }
-        // Opción 6: salir al menú
+        // Opciï¿½n 6: salir al menï¿½
         else if (ch == '6') {
             return 6;
         }
     }
 }
 
-// Menú para seleccionar nivel desde el menú principal
+// Menu para seleccionar nivel desde el menu principal
 // Muestra TODOS los niveles desbloqueados
 int mostrarMenuSeleccionarNivel(const Juego& j) {
-    erase();
-    int max_y, max_x;
-    getmaxyx(stdscr, max_y, max_x);
-    
-    mvprintw(max_y/2 - 5, max_x/2 - 15, "SELECCIONAR NIVEL");
-    mvprintw(max_y/2 - 2, max_x/2 - 25, "Nivel maximo desbloqueado: %d", j.nivelMaximoDesbloqueado);
-    mvprintw(max_y/2 + 1, max_x/2 - 15, "Selecciona un nivel:");
-    
-    // Mostrar TODOS los niveles desbloqueados
-    int linea = max_y/2 + 3;
-    for (int nivel = 1; nivel <= j.nivelMaximoDesbloqueado; nivel++) {
-        mvprintw(linea, max_x/2 - 15, "%d) Nivel %d", nivel, nivel);
-        linea++;
-    }
-    
-    // Mostrar niveles bloqueados
-    for (int nivel = j.nivelMaximoDesbloqueado + 1; nivel <= 5; nivel++) {
-        mvprintw(linea, max_x/2 - 15, "%d) Nivel %d (BLOQUEADO)", nivel, nivel);
-        linea++;
-    }
-    
-    linea += 1;
-    mvprintw(linea, max_x/2 - 15, "6) Volver al menu");
-    linea += 2;
-    mvprintw(linea, max_x/2 - 18, "Selecciona una opcion...");
-    refresh();
-    
-    while(true) {
-        int ch = getch();
-        // Verificar si presionó un número válido entre 1 y los desbloqueados
-        if (ch >= '1' && ch <= ('0' + j.nivelMaximoDesbloqueado)) {
-            return (ch - '0');
+    int seleccion = 0;
+
+    while (true) {
+        erase();
+        int max_y, max_x;
+        getmaxyx(stdscr, max_y, max_x);
+        mvprintw(max_y/2 - 8, max_x/2 - 15, "SELECCIONAR NIVEL"); // in bold
+        mvprintw(max_y/2  - 4, max_x/2 - 20, "Nivel maximo desbloqueado: %d", j.nivelMaximoDesbloqueado);
+        mvprintw(max_y/2 - 1, max_x/2 - 23, "Usa flechas y Enter (Y para salir)");
+        mvprintw(max_y/2 , max_x/2 - 15, "Selecciona un nivel:");
+
+        for (int i = 0; i < 5; i++) {
+            bool desbloqueado = (i < j.nivelMaximoDesbloqueado);
+
+            if (i == seleccion) {
+                attron(A_REVERSE);
+            }
+            if (!desbloqueado) {
+                attron(A_DIM);
+            }
+
+            if (desbloqueado) {
+                mvprintw(max_y/2 + 4 + i, max_x/2 - 15, "Nivel %d", i + 1);
+            } else {
+                mvprintw(max_y/2 + 4 + i, max_x/2 - 15, "Nivel %d (BLOQUEADO)", i + 1);
+            }
+
+            if (!desbloqueado) {
+                attroff(A_DIM);
+            }
+            if (i == seleccion) {
+                attroff(A_REVERSE);
+            }
         }
-        else if (ch == '6') {
+
+        refresh();
+        int input = getch();
+
+        if (input == KEY_UP && seleccion > 0) {
+            seleccion--;
+        } else if (input == KEY_DOWN && seleccion < 4) {
+            seleccion++;
+        } else if (input == 10) {  // Enter
+            if (seleccion < j.nivelMaximoDesbloqueado) {
+                return seleccion + 1;
+            }
+            beep();
+        } else if (input == 'y' || input == 'Y') {
             return -1;
         }
     }
 }
 
-// Función principal
+// Funcion principal
 int main() {
     Juego bomberman;
     
@@ -979,15 +993,15 @@ int main() {
     int seleccion = 0;
     bool menu = true;
 
-    // Bucle principal del menú
+    // Bucle principal del menu
     while(menu){
     erase();
     mvprintw(0, 12, "%s", titulo);
     
-    // Dibujar opciones del menú
+    // Dibujar opciones del menu
     for(int i=13; i<13+opciones.size(); i++){
         if (i == seleccion + 13) {
-            attron(A_REVERSE);  // Resaltar opción seleccionada
+            attron(A_REVERSE);  // Resaltar opcion seleccionada
             mvprintw(i, 40, "%s", opciones[i - 13].c_str());
             attroff(A_REVERSE);
         } else {
@@ -1006,7 +1020,7 @@ int main() {
 
         bool jugando = true;
         
-        // Opción: Un jugador
+        // Opciï¿½n: Un jugador
         if (opciones[seleccion] == "Un jugador") {
             limpiarEstadoNivel(bomberman);
             bomberman.enModoMultijugador = false;
@@ -1029,7 +1043,7 @@ int main() {
             pthread_create(&hiloEnems, NULL, hiloMovimientoEnemigos, datosEnems);
             pthread_detach(hiloEnems);
             
-            // Hilo cronómetro
+            // Hilo cronï¿½metro
             DataJuego* datosCrono = new DataJuego;
             datosCrono->juego = &bomberman;
             datosCrono->juegoActivo = &bomberman.juegoActivo;
@@ -1067,7 +1081,7 @@ int main() {
                         break;
                 }
 
-                // Verificar si llegó a la puerta
+                // Verificar si llegï¿½ a la puerta
                 if (bomberman.puerta.abierta &&
                     bomberman.jugadores[0].x == bomberman.puerta.x &&
                     bomberman.jugadores[0].y == bomberman.puerta.y) {
@@ -1090,7 +1104,7 @@ int main() {
                     // Mostrar pantalla de victoria
                     int resultado = mostrarVictoriaUnJugador(bomberman);
                     
-                    // Si seleccionó un nivel
+                    // Si seleccionï¿½ un nivel
                     if (resultado >= 1 && resultado <= 5) {
                         bomberman.nivel = resultado;
                         bomberman.tiempoRestante = 180;
@@ -1126,7 +1140,7 @@ int main() {
                         
                         timeout(50);
                     } 
-                    // Si seleccionó salir
+                    // Si seleccionï¿½ salir
                     else if (resultado == 6) {
                         jugando = false;
                         nivelActivo = false;
@@ -1145,7 +1159,7 @@ int main() {
             }
         } 
         
-        // Opción: Dos jugadores
+        // Opciï¿½n: Dos jugadores
         else if (opciones[seleccion] == "Dos jugadores") {
             bomberman.enModoMultijugador = true;
             
@@ -1202,7 +1216,7 @@ int main() {
                     case 'y': case 'Y': jugando = false; break;
                 }
                 
-                // Verificar si alguien murió
+                // Verificar si alguien muriï¿½
                 if (jugadorMuerto(bomberman.jugadores[0]) || jugadorMuerto(bomberman.jugadores[1])) {
                     timeout(-1);
                     bomberman.juegoActivo = false;
@@ -1213,7 +1227,7 @@ int main() {
             }
         }
         
-        // Opción: Seleccionar Nivel
+        // Opciï¿½n: Seleccionar Nivel
         else if (opciones[seleccion] == "Seleccionar Nivel") {
             int nivelSeleccionado = mostrarMenuSeleccionarNivel(bomberman);
             if (nivelSeleccionado != -1) {
@@ -1273,7 +1287,7 @@ int main() {
                             break;
                     }
 
-                    // Verificar si llegó a puerta
+                    // Verificar si llegï¿½ a puerta
                     if (bomberman.puerta.abierta &&
                         bomberman.jugadores[0].x == bomberman.puerta.x &&
                         bomberman.jugadores[0].y == bomberman.puerta.y) {
@@ -1345,7 +1359,7 @@ int main() {
             }
         }
         
-        // Opción: Controles
+        // Opciï¿½n: Controles
         else if (opciones[seleccion] == "Controles") {
             timeout(-1);
             clear();
@@ -1360,7 +1374,7 @@ int main() {
             timeout(50);
         }
         
-        // Opción: Reglas
+        // Opciï¿½n: Reglas
         else if (opciones[seleccion] == "Reglas") {
             timeout(-1);
             clear();
@@ -1395,7 +1409,7 @@ int main() {
             timeout(50);
         }
         
-        // Opción: Puntajes
+        // Opciï¿½n: Puntajes
         else if (opciones[seleccion] == "Puntajes") {
             timeout(-1);
             clear();
@@ -1424,7 +1438,7 @@ int main() {
             timeout(50);
         }
         
-        // Opción: Salir
+        // Opciï¿½n: Salir
         else if (opciones[seleccion] == "Salir") {
             jugando = false;
             menu = false;
