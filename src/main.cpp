@@ -38,6 +38,7 @@ random_device rd;
 mt19937 gen(rd()); 
 uniform_int_distribution<> randAlto(1, 13);
 uniform_int_distribution<> randLargo(1, 29);
+uniform_int_distribution<> rand0to1(0, 1);
 uniform_int_distribution<> rand1to9(1, 9);
 uniform_int_distribution<> randDir(0, 3);
 
@@ -121,8 +122,13 @@ struct Explosion {
     Juego* juego;
     Bomba bomba;
 };
+// Funcion para verificar si una posicion esta dentro de los limites del mapa
+inline bool dentroMapa(const Juego& j, int x, int y) {
+    return x >= 0 && x < j.mapa.largo && y >= 0 && y < j.mapa.alto;
+}
 
-// Inicializa los jugadores seg�n el modo
+
+// Inicializa los jugadores segun el modo
 void inicializarJugadores(Juego &j, bool modoUnJugador) {
     j.jugadores.clear();
     if (modoUnJugador) {
@@ -139,7 +145,6 @@ void inicializarJugadores(Juego &j, bool modoUnJugador) {
         return;
     }
 };
-
 // Verifica si una posici�n est� en zona de salida segura
 bool zonaSalida(int x, int y) {
     if ((x >= 1 && x <= 3) && (y >= 1 && y <= 3)) {
@@ -200,7 +205,7 @@ void colocarPowerups(Juego &j) {
                 if (get<0>(p)==x && get<1>(p)==y)
                     repetido=true;
             if (!repetido) {
-                char tipo = (rand1to9(gen) % 2 == 0) ? '$' : '+';
+                char tipo = (rand1to9(gen) %2 == 0) ? '$' : '+';
                 j.powerups.push_back({x, y, tipo});
             }
         }
@@ -413,86 +418,90 @@ bool revelarPowerup(Juego &j, int x, int y) {
     return false;
 }
 
-// Expande explosi�n de bomba en 4 direcciones
+// Expande explosion de bomba en 4 direcciones
 // Destruye muros y mata enemigos
 // En un jugador: abre puerta solo si mata K cuando no hay E
 void explotarBomba(Juego &j, Bomba bomba) {
+    // Centro
+    if (!dentroMapa(j, bomba.x, bomba.y)) return;
     marcarExplosion(j, bomba.x, bomba.y);
 
-    for (int i = 1; i <= bomba.distancia; i++) {
-
-        // Direcci�n derecha
-        if (j.mapa.posiciones[bomba.y][bomba.x + i] == '#') {
-            if (!revelarPowerup(j, bomba.x + i, bomba.y)) {
-                j.mapa.posiciones[bomba.y][bomba.x + i] = '*';
-            }
-            if (j.enModoMultijugador) {
-                if (bomba.autor < j.jugadores.size())
-                    j.jugadores[bomba.autor].cantidad += 10;
-            } else {
-                j.puntaje += 10;
-            }
+    auto sumarPuntosMuro = [&]() {
+        if (j.enModoMultijugador) {
+            if (bomba.autor >= 0 && bomba.autor < (int)j.jugadores.size())
+                j.jugadores[bomba.autor].cantidad += 10;
+        } else {
+            j.puntaje += 10;
         }
-        else {
-            marcarExplosion(j, bomba.x + i, bomba.y);
-        }
+    };
 
-        // Direcci�n izquierda
-        if (j.mapa.posiciones[bomba.y][bomba.x - i] != '=') {
-            if (j.mapa.posiciones[bomba.y][bomba.x - i] == '#') {
-                if (!revelarPowerup(j, bomba.x - i, bomba.y)) {
-                    j.mapa.posiciones[bomba.y][bomba.x - i] = '*';
-                }
-                if (j.enModoMultijugador) {
-                    if (bomba.autor < j.jugadores.size()) {
-                        j.jugadores[bomba.autor].cantidad += 10;
-                    }
-                } else {
-                    j.puntaje += 10;
-                }
-            }
-            else {
-                marcarExplosion(j, bomba.x - i, bomba.y);
-            }
+    // ---- DERECHA ----
+    for (int i = 1; i <= bomba.distancia; ++i) {
+        int x = bomba.x + i, y = bomba.y;
+        if (!dentroMapa(j, x, y)) break;
+
+        char c = j.mapa.posiciones[y][x];
+        if (c == '=') break;
+
+        if (c == '#') {
+            if (!revelarPowerup(j, x, y)) j.mapa.posiciones[y][x] = '*';
+            sumarPuntosMuro();
+            break; // se detiene al romper muro
         }
 
-        // Direcci�n abajo
-        if (j.mapa.posiciones[bomba.y + i][bomba.x] != '=') {
-            if (j.mapa.posiciones[bomba.y + i][bomba.x] == '#') {
-                if (!revelarPowerup(j, bomba.x, bomba.y + i)) {
-                    j.mapa.posiciones[bomba.y + i][bomba.x] = '*';
-                }
-                if (j.enModoMultijugador) {
-                    if (bomba.autor < j.jugadores.size())
-                        j.jugadores[bomba.autor].cantidad += 10;
-                } else {
-                    j.puntaje += 10;
-                }
-            }
-            else {
-                marcarExplosion(j, bomba.x, bomba.y + i);
-            }
-        }
-
-        // Direcci�n arriba
-        if (j.mapa.posiciones[bomba.y - i][bomba.x] != '=') {
-            if (j.mapa.posiciones[bomba.y - i][bomba.x] == '#') {
-                if (!revelarPowerup(j, bomba.x, bomba.y - i)) {
-                    j.mapa.posiciones[bomba.y - i][bomba.x] = '*';
-                }
-                if (j.enModoMultijugador) {
-                    if (bomba.autor < j.jugadores.size())
-                        j.jugadores[bomba.autor].cantidad += 10;
-                } else {
-                    j.puntaje += 10;
-                }
-            }
-            else {
-                marcarExplosion(j, bomba.x, bomba.y - i);
-            }
-        }
+        marcarExplosion(j, x, y);
     }
 
+    // ---- IZQUIERDA ----
+    for (int i = 1; i <= bomba.distancia; ++i) {
+        int x = bomba.x - i, y = bomba.y;
+        if (!dentroMapa(j, x, y)) break;
+
+        char c = j.mapa.posiciones[y][x];
+        if (c == '=') break;
+
+        if (c == '#') {
+            if (!revelarPowerup(j, x, y)) j.mapa.posiciones[y][x] = '*';
+            sumarPuntosMuro();
+            break;
+        }
+
+        marcarExplosion(j, x, y);
+    }
+
+    // ---- ABAJO ----
+    for (int i = 1; i <= bomba.distancia; ++i) {
+        int x = bomba.x, y = bomba.y + i;
+        if (!dentroMapa(j, x, y)) break;
+
+        char c = j.mapa.posiciones[y][x];
+        if (c == '=') break;
+
+        if (c == '#') {
+            if (!revelarPowerup(j, x, y)) j.mapa.posiciones[y][x] = '*';
+            sumarPuntosMuro();
+            break;
+        }
+
+        marcarExplosion(j, x, y);
+    }
+
+    // ---- ARRIBA ----
+    for (int i = 1; i <= bomba.distancia; ++i) {
+        int x = bomba.x, y = bomba.y - i;
+        if (!dentroMapa(j, x, y)) break;
+
+        char c = j.mapa.posiciones[y][x];
+        if (c == '=') break;
+
+        if (c == '#') {
+            if (!revelarPowerup(j, x, y)) j.mapa.posiciones[y][x] = '*';
+            sumarPuntosMuro();
+            break;
+        }
+
+        marcarExplosion(j, x, y);
+    }
     // Verificar si mata enemigos
     for (int i = 0; i < j.enemigos.size(); i++) {
         int ex = j.enemigos[i].x;
@@ -536,9 +545,9 @@ void explotarBomba(Juego &j, Bomba bomba) {
     }
 }
 
-// Limpia las marcas de explosi�n del mapa
+// Limpia las marcas de explosion del mapa
 void limpiarExplosion(Juego &j, Bomba bomba) {
-    // Limpiar marcas de explosi�n
+    // Limpiar marcas de explosion
     for (int y = 0; y < j.mapa.alto; y++) {
         for (int x = 0; x < j.mapa.largo; x++) {
             if (j.mapa.posiciones[y][x] == '*') {
@@ -597,7 +606,7 @@ void* hiloBomba(void* arg) {
 
     pthread_mutex_unlock(&mutex);
 
-    usleep(700000);  // Muestra explosi�n por 0.7 segundos
+    usleep(700000);  // Muestra explosion por 0.7 segundos
 
     pthread_mutex_lock(&mutex);
 
@@ -647,7 +656,7 @@ void colocarBomba(Juego &j, int jugador) {
     j.bombas.push_back(bomba);
     j.mapa.posiciones[bomba.y][bomba.x] = 'O';
 
-    // Crear hilo para explosi�n
+    // Crear hilo para explosion
     Explosion* datos = new Explosion;
     datos->juego = &j;
     datos->bomba = bomba;
@@ -665,6 +674,13 @@ void limpiarEstadoNivel(Juego& j) {
     j.enemigos.clear();
     j.muros.clear();
     j.puerta = {0, 0, false};
+
+    // Reiniciar vidas
+    for (int i = 0; i < j.jugadores.size(); i++) {
+        j.jugadores[i].vidas = 3;
+    }
+    // Limpiar powerUp de bomba
+    j.rangoBombas = 1;
 }
 
 // Crea enemigos en posiciones random
@@ -688,7 +704,7 @@ void inicializarEnemigos(Juego& j, int cuantos) {
     // Crear enemigos
     for (int e = 0; e < cuantos; ++e) {
         int x, y;
-        // Encontrar posici�n libre
+        // Encontrar posicion libre
         do {
             x = randLargo(gen);
             y = randAlto(gen);
@@ -772,7 +788,7 @@ void* hiloCronometro(void* arg) {
 }
 
 // Hilo que controla ataques de enemigos
-// Quita vida si est�n en misma posici�n que jugador
+// Quita vida si estan en misma posici�n que jugador
 void* hiloAtaqueEnemigos(void* arg) {
     DataJuego* datos = (DataJuego*) arg;
     
@@ -798,7 +814,7 @@ void* hiloAtaqueEnemigos(void* arg) {
     return NULL;
 }
 
-// Verifica si un jugador est� muerto
+// Verifica si un jugador esta muerto
 bool jugadorMuerto(const Jugador& jugador) {
     return jugador.vidas <= 0;
 }
@@ -850,49 +866,6 @@ void mostrarGanadorMultijugador(const Juego& j) {
     getch();
 }
 
-// Pantalla cuando gana un nivel
-// Muestra todos los niveles desbloqueados disponibles para jugar
-int mostrarVictoriaUnJugador(Juego& j) {
-    erase();
-    int max_y, max_x;
-    getmaxyx(stdscr, max_y, max_x);
-    
-    mvprintw(max_y/2 - 7, max_x/2 - 8, "GANASTE");
-    mvprintw(max_y/2 - 5, max_x/2 - 15, "Puntaje acumulado: %d", j.puntaje);
-    mvprintw(max_y/2 - 3, max_x/2 - 15, "Tiempo restante: %d segundos", j.tiempoRestante);
-    mvprintw(max_y/2 - 1, max_x/2 - 15, "Selecciona al cual nivel ir:");
-    
-    // Mostrar TODOS los niveles desbloqueados
-    int linea = max_y/2 + 1;
-    for (int nivel = 1; nivel <= j.nivelMaximoDesbloqueado; nivel++) {
-        mvprintw(linea, max_x/2 - 15, "%d) Pasar al nivel %d", nivel, nivel);
-        linea++;
-    }
-    
-    // Mostrar niveles bloqueados
-    for (int nivel = j.nivelMaximoDesbloqueado + 1; nivel <= 5; nivel++) {
-        mvprintw(linea, max_x/2 - 15, "%d) Nivel %d (BLOQUEADO)", nivel, nivel);
-        linea++;
-    }
-    
-    linea += 1;
-    mvprintw(linea, max_x/2 - 15, "6) Salir al menu (se guardara tu progreso)");
-    linea += 2;
-    mvprintw(linea, max_x/2 - 18, "Selecciona una opcion...");
-    refresh();
-    
-    while(true) {
-        int ch = getch();
-        // Verificar si presion� un n�mero v�lido entre 1 y los niveles desbloqueados
-        if (ch >= '1' && ch <= ('0' + j.nivelMaximoDesbloqueado)) {
-            return (ch - '0');
-        }
-        // Opci�n 6: salir al men�
-        else if (ch == '6') {
-            return 6;
-        }
-    }
-}
 
 // Menu para seleccionar nivel desde el menu principal
 // Muestra TODOS los niveles desbloqueados
@@ -905,7 +878,7 @@ int mostrarMenuSeleccionarNivel(const Juego& j) {
         getmaxyx(stdscr, max_y, max_x);
         mvprintw(max_y/2 - 8, max_x/2 - 15, "SELECCIONAR NIVEL"); // in bold
         mvprintw(max_y/2  - 4, max_x/2 - 20, "Nivel maximo desbloqueado: %d", j.nivelMaximoDesbloqueado);
-        mvprintw(max_y/2 - 1, max_x/2 - 23, "Usa flechas y Enter (Y para salir)");
+        mvprintw(max_y/2 - 1, max_x/2 - 23, "Usa flechas y Enter ('Y' para salir)");
         mvprintw(max_y/2 , max_x/2 - 15, "Selecciona un nivel:");
 
         for (int i = 0; i < 5; i++) {
@@ -916,6 +889,7 @@ int mostrarMenuSeleccionarNivel(const Juego& j) {
             }
             if (!desbloqueado) {
                 attron(A_DIM);
+
             }
 
             if (desbloqueado) {
@@ -948,6 +922,21 @@ int mostrarMenuSeleccionarNivel(const Juego& j) {
             return -1;
         }
     }
+}
+// Pantalla cuando gana un nivel
+// Muestra todos los niveles desbloqueados disponibles para jugar
+int mostrarVictoriaUnJugador(Juego& j) {
+    erase();
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+    
+    mvprintw(max_y/2 - 7, max_x/2 - 8, "GANASTE");
+    mvprintw(max_y/2 - 5, max_x/2 - 15, "Puntaje acumulado: %d", j.puntaje);
+    mvprintw(max_y/2 - 3, max_x/2 - 19, "Tiempo restante: %d segundos", j.tiempoRestante);
+    mvprintw(max_y/2 - 1, max_x/2 - 27, "Presiona cualquier tecla para seleccionar nivel...");
+    refresh();
+    getch();
+    return mostrarMenuSeleccionarNivel(j);
 }
 
 // Funcion principal
@@ -1043,7 +1032,7 @@ int main() {
             pthread_create(&hiloEnems, NULL, hiloMovimientoEnemigos, datosEnems);
             pthread_detach(hiloEnems);
             
-            // Hilo cron�metro
+            // Hilo cronometro
             DataJuego* datosCrono = new DataJuego;
             datosCrono->juego = &bomberman;
             datosCrono->juegoActivo = &bomberman.juegoActivo;
@@ -1081,7 +1070,7 @@ int main() {
                         break;
                 }
 
-                // Verificar si lleg� a la puerta
+                // Verificar si llego a la puerta
                 if (bomberman.puerta.abierta &&
                     bomberman.jugadores[0].x == bomberman.puerta.x &&
                     bomberman.jugadores[0].y == bomberman.puerta.y) {
@@ -1140,7 +1129,7 @@ int main() {
                         
                         timeout(50);
                     } 
-                    // Si seleccion� salir
+                    // Si selecciono salir
                     else if (resultado == 6) {
                         jugando = false;
                         nivelActivo = false;
@@ -1159,7 +1148,7 @@ int main() {
             }
         } 
         
-        // Opci�n: Dos jugadores
+        // Opcion: Dos jugadores
         else if (opciones[seleccion] == "Dos jugadores") {
             bomberman.enModoMultijugador = true;
             
@@ -1227,7 +1216,7 @@ int main() {
             }
         }
         
-        // Opci�n: Seleccionar Nivel
+        // Opcion: Seleccionar Nivel
         else if (opciones[seleccion] == "Seleccionar Nivel") {
             int nivelSeleccionado = mostrarMenuSeleccionarNivel(bomberman);
             if (nivelSeleccionado != -1) {
@@ -1359,7 +1348,7 @@ int main() {
             }
         }
         
-        // Opci�n: Controles
+        // Opcion: Controles
         else if (opciones[seleccion] == "Controles") {
             timeout(-1);
             clear();
@@ -1374,7 +1363,7 @@ int main() {
             timeout(50);
         }
         
-        // Opci�n: Reglas
+        // Opcion: Reglas
         else if (opciones[seleccion] == "Reglas") {
             timeout(-1);
             clear();
