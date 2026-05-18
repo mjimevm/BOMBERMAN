@@ -23,10 +23,10 @@ BOMBERMAN/
 ├── README.md
 ├── .gitignore
 ├── Makefile
-└── src/
-    ├── main.cpp          ← Código principal del juego
-    ├── main              ← Ejecutable compilado
-    └── bomberman         ← Ejecutable compilado (binario)
+└── src/                 ← EJECUTAR DESDE AQUÍ
+    ├── main.cpp         
+    ├── main             
+    └── bomberman         
 ```
 
 ---
@@ -44,8 +44,8 @@ BOMBERMAN/
 ### Ubuntu/Debian
 
 ```bash
-sudo apt-get install libncurses-dev
-sudo apt-get install build-essential
+sudo apt update
+sudo apt install libncurses5-dev libncursesw5-dev
 ```
 
 ### macOS (Homebrew)
@@ -64,18 +64,15 @@ pacman -S mingw-w64-x86_64-ncurses
 
 ## Compilación y Ejecución
 
-### Opción 1: Con Makefile (Recomendado)
+### 1. Compilar el programa
 
 ```bash
-make          # Compila el proyecto
-make run      # Compila y ejecuta
-make clean    # Limpia archivos compilados
+g++ main.cpp -o bomberman -lpthread -lncurses
 ```
 
-### Opción 2: Compilación manual
+### 2. Ejecutar el juego
 
 ```bash
-g++ -std=c++11 -o bomberman src/main.cpp -lncurses -lpthread
 ./bomberman
 ```
 
@@ -219,7 +216,7 @@ Cada nivel se desbloquea al completar el anterior.
 | = | Muro indestructible |
 | X | Puerta cerrada |
 | > | Puerta abierta |
-| $ | Powerup: rango de bomba |
+| $ | Powerup: aumenta rango de bomba |
 | + | Powerup: vidas |
 
 ---
@@ -228,10 +225,10 @@ Cada nivel se desbloquea al completar el anterior.
 
 ### Error: `"ncurses.h: No such file or directory"`
 
-Instala las librerías de desarrollo:
+Instala las librerías necesarias:
 
 ```bash
-sudo apt-get install libncurses-dev
+sudo apt install libncurses5-dev libncursesw5-dev
 ```
 
 ---
