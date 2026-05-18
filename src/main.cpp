@@ -26,14 +26,14 @@
 
 using namespace std;
 
-// Mutex para sincronizaci�n entre hilos
+// Mutex para sincronizacion entre hilos
 pthread_mutex_t mutex;
 
 //Semaforo
 sem_t sem1;
 sem_t sem2;
 
-// Generadores de n�meros aleatorios
+// Generadores de numeros aleatorios
 random_device rd; 
 mt19937 gen(rd()); 
 uniform_int_distribution<> randAlto(1, 13);
@@ -117,7 +117,7 @@ struct Juego {
     bool enModoMultijugador = false;
 };
 
-// Estructura para datos de explosi�n
+// Estructura para datos de explosion
 struct Explosion {
     Juego* juego;
     Bomba bomba;
@@ -145,7 +145,7 @@ void inicializarJugadores(Juego &j, bool modoUnJugador) {
         return;
     }
 };
-// Verifica si una posici�n est� en zona de salida segura
+// Verifica si una posicion esta en zona de salida segura
 bool zonaSalida(int x, int y) {
     if ((x >= 1 && x <= 3) && (y >= 1 && y <= 3)) {
         return true;
@@ -158,7 +158,7 @@ bool zonaSalida(int x, int y) {
     return false;
 }
 
-// Crea el mapa con muros y espacios vac�os
+// Crea el mapa con muros y espacios vacios
 void inicializarMapa(Juego &j) {
     j.mapa.alto = 15;
     j.mapa.largo = 31;
@@ -174,11 +174,11 @@ void inicializarMapa(Juego &j) {
             if (y == 0 || y == j.mapa.alto -1 || x == 0 || x == j.mapa.largo - 1) {
                 j.mapa.posiciones[y][x] = '=';
             } 
-            // Patr�n de tablero: muros indestructibles en posiciones pares
+            // Patron de tablero: muros indestructibles en posiciones pares
             else if (y % 2 == 0 && x % 2 == 0) { 
                 j.mapa.posiciones[y][x] = '=';
             } 
-            // Resto: muros destructibles aleatorios o espacios vac�os
+            // Resto: muros destructibles aleatorios o espacios vacios
             else {
                 if (zonaSalida(x, y)) {
                     j.mapa.posiciones[y][x] = ' ';
@@ -252,7 +252,7 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
     refresh();
 };
 
-// Verifica si hay bomba en una posici�n
+// Verifica si hay bomba en una posicion
 bool hayBomba(Juego &j, int x, int y) {
     for (int i = 0; i < j.bombas.size(); i++) {
         if (j.bombas[i].x == x && j.bombas[i].y == y) {
@@ -273,7 +273,7 @@ void eliminarBomba(Juego &j, Bomba bomba) {
     }
 }
 
-//muestra una pantalla de muerte cuando un jugador recibe da�o
+//muestra una pantalla de muerte cuando un jugador recibe daño
 void mostrarMuerteJugador(Juego &j, int jugador) {
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -303,7 +303,7 @@ bool hayEnemigoEn(Juego &j, int x, int y) {
     return false;
 }
 
-// Mueve un jugador en la direcci�n indicada
+// Mueve un jugador en la dirección indicada
 void moverJugador(Juego &j, int jugador, int dx, int dy) {
     pthread_mutex_lock(&mutex);
 
@@ -331,7 +331,7 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
         pthread_mutex_unlock(&mutex);
         return;
     }
-    // Puede moverse a espacios vac�os o a la puerta si est� abierta
+    // Puede moverse a espacios vacios o a la puerta si esta abierta
     if (celda == ' ' || celda == '$' || celda == '+' ||(!j.enModoMultijugador && j.puerta.abierta && j.puerta.x == newX && j.puerta.y == newY)) {
         // Limpiar posicion anterior
         if (hayBomba(j, oldX, oldY)) {
@@ -356,7 +356,7 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
     pthread_mutex_unlock(&mutex);
 };
 
-// Marca una celda como explosi�n
+// Marca una celda como explosion
 void marcarExplosion(Juego &j, int x, int y) {
     if (x <= 0 || x >= j.mapa.largo - 1 || y <= 0 || y >= j.mapa.alto - 1) {
         return;
@@ -369,7 +369,7 @@ void marcarExplosion(Juego &j, int x, int y) {
     j.mapa.posiciones[y][x] = '*';
 }
 
-// Calcula distancia de Manhattan entre dos puntos
+// Calcula la distancia absoluta entre dos puntos 
 int distAbsoluta(int x1,int y1,int x2,int y2){
     return abs(x1-x2) + abs(y1-y2);
 }
@@ -384,7 +384,7 @@ bool esCeldaLibreParaPuerta(const Juego& j, int x, int y) {
 void colocarPuertaLejosDelSpawn(Juego& j, int spawnX, int spawnY) {
     const int minDist = 20;
 
-    // Intenta hasta 2000 veces encontrar posici�n v�lida
+    // Intenta hasta 2000 veces encontrar posicion valida
     for (int t = 0; t < 2000; t++) {
         int x = randLargo(gen);
         int y = randAlto(gen);  
@@ -618,7 +618,7 @@ void* hiloBomba(void* arg) {
     return NULL;
 }
 
-// Coloca una bomba en la posici�n del jugador
+// Coloca una bomba en la posicion del jugador
 void colocarBomba(Juego &j, int jugador) {
     pthread_mutex_lock(&mutex);
 
@@ -732,11 +732,11 @@ void* hiloMovimientoEnemigos(void* arg) {
         
         // Mover cada enemigo
         for (int i = 0; i < datos->juego->enemigos.size(); i++) {
-            int dir = randDir(gen);  // Direcci�n random
+            int dir = randDir(gen);  // Direccion random
             int newX = datos->juego->enemigos[i].x;
             int newY = datos->juego->enemigos[i].y;
             
-            // Calcular nueva posici�n
+            // Calcular nueva posicion
             switch(dir) {
                 case 0: newY--; break;
                 case 1: newY++; break;
@@ -744,19 +744,19 @@ void* hiloMovimientoEnemigos(void* arg) {
                 case 3: newX++; break;
             }
             
-            // Validar movimiento (dentro del mapa y espacio vac�o)
+            // Validar movimiento 
             if (newX > 0 && newX < datos->juego->mapa.largo - 1 && 
                 newY > 0 && newY < datos->juego->mapa.alto - 1 &&
                 datos->juego->mapa.posiciones[newY][newX] == ' ') {
                 
-                // Limpiar posici�n anterior
+                // Limpiar posicion anterior
                 datos->juego->mapa.posiciones[datos->juego->enemigos[i].y][datos->juego->enemigos[i].x] = ' ';
                 
-                // Actualizar posici�n
+                // Actualizar posicion
                 datos->juego->enemigos[i].x = newX;
                 datos->juego->enemigos[i].y = newY;
                 
-                // Dibujar en nueva posici�n
+                // Dibujar en nueva posicion
                 char charEnemigo = datos->juego->enemigos[i].tieneLlave ? 'K' : 'E';
                 datos->juego->mapa.posiciones[newY][newX] = charEnemigo;
             }
@@ -769,7 +769,7 @@ void* hiloMovimientoEnemigos(void* arg) {
     return NULL;
 }
 
-// Hilo del cron�metro que descuenta el tiempo
+// Hilo del cronometro que descuenta el tiempo
 void* hiloCronometro(void* arg) {
     DataJuego* datos = (DataJuego*) arg;
     
@@ -788,7 +788,7 @@ void* hiloCronometro(void* arg) {
 }
 
 // Hilo que controla ataques de enemigos
-// Quita vida si estan en misma posici�n que jugador
+// Quita vida si estan en misma posicion que jugador
 void* hiloAtaqueEnemigos(void* arg) {
     DataJuego* datos = (DataJuego*) arg;
     
@@ -797,7 +797,7 @@ void* hiloAtaqueEnemigos(void* arg) {
         
         pthread_mutex_lock(&mutex);
         
-        // Verificar colisi�n enemigo-jugador
+        // Verificar colision enemigo-jugador
         for (int i = 0; i < datos->juego->enemigos.size(); i++) {
             for (int j = 0; j < datos->juego->jugadores.size(); j++) {
                 if (datos->juego->enemigos[i].x == datos->juego->jugadores[j].x &&
@@ -1009,7 +1009,7 @@ int main() {
 
         bool jugando = true;
         
-        // Opci�n: Un jugador
+        // Opcion: Un jugador
         if (opciones[seleccion] == "Un jugador") {
             limpiarEstadoNivel(bomberman);
             bomberman.enModoMultijugador = false;
@@ -1093,7 +1093,7 @@ int main() {
                     // Mostrar pantalla de victoria
                     int resultado = mostrarVictoriaUnJugador(bomberman);
                     
-                    // Si seleccion� un nivel
+                    // Si selecciono un nivel
                     if (resultado >= 1 && resultado <= 5) {
                         bomberman.nivel = resultado;
                         bomberman.tiempoRestante = 180;
@@ -1205,7 +1205,7 @@ int main() {
                     case 'y': case 'Y': jugando = false; break;
                 }
                 
-                // Verificar si alguien muri�
+                // Verificar si alguien murio
                 if (jugadorMuerto(bomberman.jugadores[0]) || jugadorMuerto(bomberman.jugadores[1])) {
                     timeout(-1);
                     bomberman.juegoActivo = false;
@@ -1276,7 +1276,7 @@ int main() {
                             break;
                     }
 
-                    // Verificar si lleg� a puerta
+                    // Verificar si llego a puerta
                     if (bomberman.puerta.abierta &&
                         bomberman.jugadores[0].x == bomberman.puerta.x &&
                         bomberman.jugadores[0].y == bomberman.puerta.y) {
@@ -1398,7 +1398,7 @@ int main() {
             timeout(50);
         }
         
-        // Opci�n: Puntajes
+        // Opcion: Puntajes
         else if (opciones[seleccion] == "Puntajes") {
             timeout(-1);
             clear();
@@ -1427,7 +1427,7 @@ int main() {
             timeout(50);
         }
         
-        // Opci�n: Salir
+        // Opcion: Salir
         else if (opciones[seleccion] == "Salir") {
             jugando = false;
             menu = false;
