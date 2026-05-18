@@ -370,7 +370,7 @@ void marcarExplosion(Juego &j, int x, int y) {
 }
 
 // Calcula distancia de Manhattan entre dos puntos
-int distManhattan(int x1,int y1,int x2,int y2){
+int distAbsoluta(int x1,int y1,int x2,int y2){
     return abs(x1-x2) + abs(y1-y2);
 }
 
@@ -390,7 +390,7 @@ void colocarPuertaLejosDelSpawn(Juego& j, int spawnX, int spawnY) {
         int y = randAlto(gen);  
 
         if (!esCeldaLibreParaPuerta(j, x, y)) continue;
-        if (distManhattan(spawnX, spawnY, x, y) < minDist) continue;
+        if (distAbsoluta(spawnX, spawnY, x, y) < minDist) continue;
 
         j.puerta = {x, y, false};
         j.mapa.posiciones[y][x] = 'X';
