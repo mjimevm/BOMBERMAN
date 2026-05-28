@@ -23,6 +23,7 @@
 #include <ncurses.h>
 #include <random>
 #include <tuple>
+#include <locale.h>
 
 using namespace std;
 
@@ -235,17 +236,70 @@ void interfaz_un_jugador (const Juego &j, bool modoUnJugador) {
 void dibujarMapa(const Juego &j, bool modoUnJugador) {
     erase();
 
-    // Dibuja cada celda del mapa
+    // Dibuja cada celda del mapa cambiando a los simbolos con mejor dise;o
     for (int y = 0; y < j.mapa.alto; y++) {
         for (int x = 0; x < j.mapa.largo; x++) {
-            mvaddch(y, x, (unsigned char)j.mapa.posiciones[y][x]);
+            char c = j.mapa.posiciones[y][x];
+            
+            switch(c) {
+                case '=': //muro indestructible
+                    mvprintw(y, x, "█");
+                    break;
+
+                case '#': //muro destructible
+                    mvprintw(y, x, "#");
+                    break;
+
+                case '@': //jugador
+                    mvprintw(y, x, "@");
+                    break;
+
+                case 'O': // bomba
+                    mvprintw(y, x, "¤");
+                    break;
+
+                case '*': // explosion
+                    mvprintw(y, x, "✸");
+                    break;
+
+                case 'E': // enemigo comun
+                    mvprintw(y, x, "☠");
+                    break;
+
+                case 'K': // enemigo llave
+                    mvprintw(y, x, "♛");
+                    break;
+
+                case '>': // puerta abierta
+                    mvprintw(y, x, "⌂");
+                    break;
+
+                case 'X': // puerta cerrada
+                    mvprintw(y, x, "☒");
+                    break;
+
+                case '$': // power up bomba
+                    mvprintw(y, x, "♦");
+                    break;
+
+                case '+': // power up vida
+                    mvprintw(y, x, "♥");
+                    break;
+
+                default:
+                    mvaddch(y, x, c);
+            }
         }
     }
 
     // Redibujar puerta encima de todo en modo un jugador
     if (!j.enModoMultijugador && j.puerta.x > 0 && j.puerta.y > 0) {
-        char charPuerta = j.puerta.abierta ? '>' : 'X';
-        mvaddch(j.puerta.y, j.puerta.x, (unsigned char)charPuerta);
+        if (j.puerta.abierta) {
+            mvprintw(j.puerta.y, j.puerta.x, "⌂");
+        }
+        else {
+            mvprintw(j.puerta.y, j.puerta.x, "☒");
+        }
     }
 
     interfaz_un_jugador(j, modoUnJugador);
@@ -941,6 +995,8 @@ int mostrarVictoriaUnJugador(Juego& j) {
 
 // Funcion principal
 int main() {
+    setlocale(LC_ALL, "");
+    
     Juego bomberman;
     
     // Inicializar estado global
