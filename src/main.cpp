@@ -225,7 +225,7 @@ void interfaz_un_jugador (const Juego &j, bool modoUnJugador) {
         if (j.puerta.abierta) {
             mvprintw(uiy + 1, 0, "Puerta ABIERTA - Ve hasta la puerta para pasar de nivel");
         } else {
-            mvprintw(uiy + 1, 0, "Puerta CERRADA - Destruye todos los enemigos E, luego mata al K para abrir puerta");
+            mvprintw(uiy + 1, 0, "Puerta CERRADA - Destruye todos los enemigos ♣, luego mata al ♠ para abrir puerta");
         }
     } else {
         // HUD multijugador
@@ -1435,9 +1435,9 @@ int main() {
             mvprintw(2, max_x/2 - 10, "REGLAS DEL JUEGO");
             mvprintw(4, 5, "MODO UN JUGADOR:");
             mvprintw(6, 10, "Destruir muros (#): 10 puntos");
-            mvprintw(7, 10, "Eliminar enemigos (E): 100 puntos");
-            mvprintw(8, 10, "Enemigo K (con llave): SOLO puede morir si NO hay enemigos E");
-            mvprintw(9, 10, "Cuando K muere sin E disponibles -> ABRE LA PUERTA");
+            mvprintw(7, 10, "Eliminar enemigos (♣): 100 puntos");
+            mvprintw(8, 10, "Enemigo ♠ (con llave): SOLO puede morir si NO hay enemigos ♣");
+            mvprintw(9, 10, "Cuando ♠ muere sin ♣ disponibles -> ABRE LA PUERTA");
             mvprintw(10, 10, "Pasar nivel: 50 puntos mas 10 puntos por segundo restante");
             mvprintw(11, 10, "Tiempo limite: 3 minutos por nivel");
             mvprintw(12, 10, "Vidas: 3 (se pierden al tocar explosion o enemigo)");
@@ -1448,7 +1448,7 @@ int main() {
             mvprintw(18, 10, "No hay puerta ni limite de tiempo");
             mvprintw(19, 10, "Gana quien tenga mas vidas");
             mvprintw(20, 10, "Destruir muros (#): 10 puntos");
-            mvprintw(21, 10, "Eliminar enemigos (E): 100 puntos");
+            mvprintw(21, 10, "Eliminar enemigos (♣): 100 puntos");
             
             mvprintw(23, 5, "MECANICAS GENERALES:");
             mvprintw(25, 10, "Enemigos se mueven cada 1 segundo");
