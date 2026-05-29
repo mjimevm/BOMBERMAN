@@ -27,6 +27,7 @@
 #include <cwchar>
 
 using namespace std;
+using namespace std::chrono;
 
 // Mutex para sincronizacion entre hilos
 pthread_mutex_t mutex;
@@ -238,6 +239,8 @@ void interfaz_un_jugador (const Juego &j, bool modoUnJugador) {
 // Dibuja el mapa completo en pantalla
 void dibujarMapa(const Juego &j, bool modoUnJugador) {
     erase();
+
+    bool parpadeo = (duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() / 250) % 2;
     
     // Dibuja cada celda del mapa cambiando a los simbolos con mejor dise;o
     for (int y = 0; y < j.mapa.alto; y++) {
@@ -246,47 +249,87 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
             
             switch(c) {
                 case '=':
+                    attron(COLOR_PAIR(1));
                     mvaddwstr(y, x, L"=");   // muro fijo
+                    attroff(COLOR_PAIR(1));
                     break;
 
                 case '#':
+                    attron(COLOR_PAIR(2));
                     mvaddwstr(y, x, L"#");   // muro rompible
+                    attroff(COLOR_PAIR(2));
                     break;
 
                 case '@':
+                    attron(COLOR_PAIR(3) | A_BOLD);
                     mvaddwstr(y, x, L"●");   // jugador
+                    attroff(COLOR_PAIR(3) | A_BOLD);
                     break;
 
                 case 'O':
-                    mvaddwstr(y, x, L"¤");   // bomba
+                    if (parpadeo) { // bomba parpadeando
+                        attron(COLOR_PAIR(11) | A_BOLD);
+                        mvaddwstr(y, x, L"¤"); 
+                        attroff(COLOR_PAIR(11) | A_BOLD);
+                    } else {
+                        attron(COLOR_PAIR(7) | A_BOLD);
+                        mvaddwstr(y, x, L"¤");
+                        attroff(COLOR_PAIR(7) | A_BOLD);
+                    }
                     break;
 
                 case '*':
+                    attron(COLOR_PAIR(8) | A_BOLD);
                     mvaddwstr(y, x, L"✦");   // explosión
+                    attroff(COLOR_PAIR(8) | A_BOLD);
                     break;
 
                 case 'E':
+                    attron(COLOR_PAIR(4) | A_BOLD);
                     mvaddwstr(y, x, L"♣");   // enemigo
+                    attroff(COLOR_PAIR(4) | A_BOLD);
                     break;
 
                 case 'K':
+                    attron(COLOR_PAIR(5) | A_BOLD);
                     mvaddwstr(y, x, L"♠");   // jefe
+                    attroff(COLOR_PAIR(5) | A_BOLD);
                     break;
 
                 case '>':
+                    attron(COLOR_PAIR(6) | A_BOLD);
                     mvaddwstr(y, x, L"▣");   // puerta abierta
+                    attroff(COLOR_PAIR(6) | A_BOLD);
                     break;
 
                 case 'X':
+                    attron(COLOR_PAIR(6) | A_BOLD);
                     mvaddwstr(y, x, L"□");   // puerta cerrada
+                    attroff(COLOR_PAIR(6) | A_BOLD);
                     break;
 
                 case '$':
-                    mvaddwstr(y, x, L"♦");   // powerup bomba
+                    if (parpadeo) { // power up bomba  parpadeando
+                        attron(COLOR_PAIR(10) | A_BOLD);
+                        mvaddwstr(y, x, L"♦");
+                        attroff(COLOR_PAIR(10) | A_BOLD);
+                    } else {
+                        attron(COLOR_PAIR(7) | A_BOLD);
+                        mvaddwstr(y, x, L"♦");
+                        attroff(COLOR_PAIR(7) | A_BOLD);
+                    }
                     break;
 
                 case '+':
-                    mvaddwstr(y, x, L"♥");   // vida
+                    if (parpadeo) { // vida parpadeando
+                        attron(COLOR_PAIR(9) | A_BOLD);
+                        mvaddwstr(y, x, L"♥");
+                        attroff(COLOR_PAIR(9) | A_BOLD);
+                    } else {
+                        attron(COLOR_PAIR(7) | A_BOLD);
+                        mvaddwstr(y, x, L"♥");
+                        attroff(COLOR_PAIR(7) | A_BOLD);
+                    }
                     break;
                 default:
                     mvaddch(y, x, c);
@@ -297,10 +340,20 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
     // Redibujar puerta encima de todo en modo un jugador
     if (!j.enModoMultijugador && j.puerta.x > 0 && j.puerta.y > 0) {
         if (j.puerta.abierta) {
-            mvaddwstr(j.puerta.y, j.puerta.x, L"▣");
+            if (parpadeo) { // puerta abierta parpadeando
+                attron(COLOR_PAIR(6) | A_BOLD);
+                mvaddwstr(j.puerta.y, j.puerta.x, L"▣");
+                attroff(COLOR_PAIR(6) | A_BOLD);
+            } else {
+                attron(COLOR_PAIR(7) | A_BOLD);
+                mvaddwstr(j.puerta.y, j.puerta.x, L"▣");
+                attroff(COLOR_PAIR(7) | A_BOLD);
+            }
         }
         else {
+            attron(COLOR_PAIR(6) | A_BOLD);
             mvaddwstr(j.puerta.y, j.puerta.x, L"□");
+            attroff(COLOR_PAIR(6) | A_BOLD);
         }
     }
 
@@ -1022,6 +1075,21 @@ int main() {
     curs_set(0);
     keypad(stdscr, TRUE);
     nodelay(stdscr, TRUE);
+    start_color();
+    use_default_colors();
+
+    //agregar pares de colores para elementos
+    init_pair(1, COLOR_BLUE,    -1);  // muro fijo
+    init_pair(2, COLOR_YELLOW,  -1);  // muro rompible
+    init_pair(3, COLOR_GREEN,   -1);  // jugador
+    init_pair(4, COLOR_RED,     -1);  // enemigo
+    init_pair(5, COLOR_MAGENTA, -1);  // jefe
+    init_pair(6, COLOR_CYAN,    -1);  // puerta
+    init_pair(7, COLOR_WHITE,   -1);  // bomba normal
+    init_pair(8, COLOR_RED,  -1);  // explosión
+    init_pair(9, COLOR_GREEN,   -1);  // vida
+    init_pair(10,COLOR_CYAN,    -1);  // powerup
+    init_pair(11, COLOR_RED, -1);  // bomba parpadeando
 
     const char* titulo = R"( 
  /$$$$$$$                          /$$                                                            
