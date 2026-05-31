@@ -228,11 +228,13 @@ void interfaz_un_jugador (const Juego &j, bool modoUnJugador) {
         } else {
             mvprintw(uiy + 1, 0, "Puerta CERRADA - Destruye todos los enemigos ♣, luego mata al ♠ para abrir puerta");
         }
+        mvprintw(uiy + 2, 0, "Usa (WASD) para moverte y (E) para colocar bomba");
     } else {
         // HUD multijugador
         mvprintw(uiy, 0, "J1 Vidas: %d  Puntaje: %d     J2 Vidas: %d  Puntaje: %d", 
             j.jugadores[0].vidas, j.jugadores[0].cantidad, 
             j.jugadores[1].vidas, j.jugadores[1].cantidad);
+        mvprintw(uiy + 1, 0, "(WASD) movimiento J1 | (E) bomba J1 | (JIKL) movimiento J2 | (O) bomba J2 | (Y) salir");
     }
 }
 
@@ -262,10 +264,14 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
 
                 case '@':
                     attron(COLOR_PAIR(3) | A_BOLD);
-                    mvaddwstr(y, x, L"●");   // jugador
+                    mvaddwstr(y, x, L"●");   // jugador 1
                     attroff(COLOR_PAIR(3) | A_BOLD);
                     break;
-
+                case '&':
+                    attron(COLOR_PAIR(3) | A_BOLD);
+                    mvaddwstr(y, x, L"⚬");   // jugador 2
+                    attroff(COLOR_PAIR(3) | A_BOLD);
+                    break;
                 case 'O':
                     if (parpadeo) { // bomba parpadeando
                         attron(COLOR_PAIR(11) | A_BOLD);
@@ -398,8 +404,12 @@ void reaparecerJugador(Juego &j, int jugador) {
 
     j.jugadores[jugador].x = spawnX;
     j.jugadores[jugador].y = spawnY;
-
-    j.mapa.posiciones[spawnY][spawnX] = '@';
+    if(jugador == 0) {
+        j.mapa.posiciones[spawnY][spawnX] = '@';
+    }
+    else {
+        j.mapa.posiciones[spawnY][spawnX] = '&';
+    }
 }
 //verifica si hay un enemigo en la casilla a donde se mueve el jugador
 bool hayEnemigoEn(Juego &j, int x, int y) {
@@ -459,7 +469,12 @@ void moverJugador(Juego &j, int jugador, int dx, int dy) {
         // Actualizar posicin
         j.jugadores[jugador].x = newX;
         j.jugadores[jugador].y = newY;
-        j.mapa.posiciones[newY][newX] = '@';
+        if(jugador == 0) {
+            j.mapa.posiciones[newY][newX] = '@';
+        }
+        else {
+            j.mapa.posiciones[newY][newX] = '&';
+        }
     }
 
     pthread_mutex_unlock(&mutex);
@@ -667,7 +682,12 @@ void limpiarExplosion(Juego &j, Bomba bomba) {
 
     // Redibujar jugadores
     for (int i = 0; i < j.jugadores.size(); i++) {
-        j.mapa.posiciones[j.jugadores[i].y][j.jugadores[i].x] = '@';
+        if (i == 0) {
+            j.mapa.posiciones[j.jugadores[i].y][j.jugadores[i].x] = '@';
+        }
+        else {
+            j.mapa.posiciones[j.jugadores[i].y][j.jugadores[i].x] = '&';
+        }
     }
 
     // Redibujar bombas
@@ -939,6 +959,7 @@ void mostrarGameOverUnJugador(const Juego& j) {
     mvprintw(max_y/2 + 2, max_x/2 - 22, "Presiona cualquier tecla para volver al menu...");
     refresh();
     getch();
+    nodelay(stdscr, TRUE);
 }
 
 // Pantalla de fin de juego en modo dos jugadores
@@ -973,6 +994,7 @@ void mostrarGanadorMultijugador(const Juego& j) {
     mvprintw(max_y - 2, max_x/2 - 22, "Presiona cualquier tecla para volver al menu...");
     refresh();
     getch();
+    nodelay(stdscr, TRUE);
 }
 
 
@@ -1045,6 +1067,7 @@ int mostrarVictoriaUnJugador(Juego& j) {
     mvprintw(max_y/2 - 1, max_x/2 - 27, "Presiona cualquier tecla para seleccionar nivel...");
     refresh();
     getch();
+    nodelay(stdscr, FALSE);
     return mostrarMenuSeleccionarNivel(j);
 }
 
@@ -1124,6 +1147,7 @@ int main() {
             mvprintw(i, 40, "%s", opciones[i - 13].c_str());
         }
     }
+    mvprintw(13 + opciones.size() + 2, 22, "Usa ▲  y ▼  para navegar y Enter para seleccionar");
     refresh();
     
     // Obtener entrada del usuario
@@ -1289,7 +1313,7 @@ int main() {
             inicializarMapa(bomberman);
             colocarPowerups(bomberman);
             bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
-            bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '@';
+            bomberman.mapa.posiciones[bomberman.jugadores[1].y][bomberman.jugadores[1].x] = '&';
             
             inicializarEnemigos(bomberman, 0);
             
@@ -1473,7 +1497,6 @@ int main() {
                         mostrarGameOverUnJugador(bomberman);
                         jugandoNivel = false;
                         nivelActivo = false;
-                        nodelay(stdscr, TRUE);
                     }
                 }
             }
