@@ -251,7 +251,21 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
             switch(c) {
                 case '=':
                     attron(COLOR_PAIR(1));
-                    mvaddwstr(y, x, L"=");   // muro fijo
+                    if (y == 0 && x == 0) {
+                        mvaddwstr(y, x, L"╔"); // esquina superior izquierda
+                    } else if (y == 0 && x == j.mapa.largo - 1) {
+                        mvaddwstr(y, x, L"╗"); // esquina superior derecha
+                    } else if (y == j.mapa.alto - 1 && x == 0) {
+                        mvaddwstr(y, x, L"╚"); // esquina inferior izquierda
+                    } else if (y == j.mapa.alto - 1 && x == j.mapa.largo - 1) {
+                        mvaddwstr(y, x, L"╝"); // esquina inferior derecha
+                    } else if (y == 0 || y == j.mapa.alto - 1) {
+                        mvaddwstr(y, x, L"═"); // bordes horizontales
+                    } else if (x == 0 || x == j.mapa.largo - 1) {
+                        mvaddwstr(y, x, L"║"); // bordes verticales
+                    } else {
+                        mvaddwstr(y, x, L"="); // interior
+                    }
                     attroff(COLOR_PAIR(1));
                     break;
 
