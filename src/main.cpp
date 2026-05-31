@@ -25,6 +25,14 @@
 #include <tuple>
 #include <locale.h>
 #include <cwchar>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <limits>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <cstring>
 
 using namespace std;
 using namespace std::chrono;
@@ -91,13 +99,13 @@ struct Puerta {
     int y;
     bool abierta;
 };
-
 struct Juego;
 
 // Estructura para pasar datos a los hilos
 struct DataJuego {
     Juego* juego;
     volatile bool* juegoActivo;
+    int runID = 0;
 };
 
 // Estructura principal del juego
@@ -118,6 +126,7 @@ struct Juego {
     volatile bool juegoActivo = true;
     
     bool enModoMultijugador = false;
+    int runID = 0;
 };
 
 // Estructura para datos de explosion
@@ -125,29 +134,19 @@ struct Explosion {
     Juego* juego;
     Bomba bomba;
 };
+
+struct Puntajes {
+    string fecha;
+    string nombre;
+    int puntaje;
+};
 // Funcion para verificar si una posicion esta dentro de los limites del mapa
 inline bool dentroMapa(const Juego& j, int x, int y) {
     return x >= 0 && x < j.mapa.largo && y >= 0 && y < j.mapa.alto;
 }
 
 
-// Inicializa los jugadores segun el modo
-void inicializarJugadores(Juego &j, bool modoUnJugador) {
-    j.jugadores.clear();
-    if (modoUnJugador) {
-        Jugador p1 = {"Player1", 3, 1, 1, 0};
-        j.jugadores.push_back(p1);
-        return;
-    }
-    if (!modoUnJugador) {
-        Jugador p1 = {"Player1", 3, 1, 1, 0};
-        Jugador p2 = {"Player2", 3, 29, 13, 0};
 
-        j.jugadores.push_back(p1);
-        j.jugadores.push_back(p2);
-        return;
-    }
-};
 // Verifica si una posicion esta en zona de salida segura
 bool zonaSalida(int x, int y) {
     if ((x >= 1 && x <= 3) && (y >= 1 && y <= 3)) {
@@ -1071,20 +1070,235 @@ int mostrarVictoriaUnJugador(Juego& j) {
     return mostrarMenuSeleccionarNivel(j);
 }
 
+static const char* PUNTAJES_1P_FILE = "puntajes.csv";
+
+string ahoraISO() {
+    time_t t = time(nullptr);
+    tm *lt = localtime(&t);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", lt);
+    return string(buf);
+}
+
+void asegurarCSV() {
+    ifstream in(PUNTAJES_1P_FILE);
+    if (in.good()) return;
+    ofstream out(PUNTAJES_1P_FILE);
+    out << "fecha,nombre,puntaje\n";
+}
+
+string pedirNombre(const string& titulo) {
+    echo();
+    nodelay(stdscr, FALSE);
+    curs_set(1);
+
+    erase();
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    mvprintw(max_y/2 - 1, max_x/2 - (int)titulo.size()/2, "%s", titulo.c_str());
+    mvprintw(max_y/2 + 1, max_x/2 - 18, "Nombre: ");
+    refresh();
+
+    char buf[64];
+    getnstr(buf, 63);
+
+    noecho();
+    nodelay(stdscr, TRUE);
+    curs_set(0);
+
+    string nombre(buf);
+    if (nombre.empty()) nombre = "Player";
+    return nombre;
+}
+
+
+void asegurarCSV1P() {
+    ifstream in(PUNTAJES_1P_FILE);
+    if (in.good()) return;
+    ofstream out(PUNTAJES_1P_FILE);
+    out << "fecha,nombre,puntaje\n";
+}
+
+void guardarPuntajesCSV(const string& nombreJugador, int puntaje) {
+    asegurarCSV1P();
+
+    vector<Puntajes> puntajes;
+
+    // leer existentes
+    {
+        ifstream in(PUNTAJES_1P_FILE);
+        string line;
+        getline(in, line); // header
+        while (getline(in, line)) {
+            if (line.empty()) continue;
+            stringstream ss(line);
+            vector<string> c; string p;
+            while (getline(ss, p, ',')) c.push_back(p);
+            if (c.size() < 3) continue;
+
+            Puntajes s;
+            s.fecha = c[0];
+            s.nombre = c[1];
+            s.puntaje = stoi(c[2]);
+            puntajes.push_back(s);
+        }
+    }
+
+    // agregar nuevo (TOP 5)
+    Puntajes nuevo;
+    nuevo.fecha = ahoraISO();
+    nuevo.nombre = nombreJugador;
+    nuevo.puntaje = puntaje;
+    puntajes.push_back(nuevo);
+
+    // ordenar desc por puntaje (si empata, más reciente primero por fecha string ISO)
+    sort(puntajes.begin(), puntajes.end(), [](const Puntajes& a, const Puntajes& b) {
+        if (a.puntaje != b.puntaje) return a.puntaje > b.puntaje;
+        return a.fecha > b.fecha;
+    });
+
+    if ((int)puntajes.size() > 5) puntajes.resize(5);
+
+    // escribir
+    ofstream out(PUNTAJES_1P_FILE, ios::trunc);
+    out << "fecha,nombre,puntaje\n";
+    for (auto &s : puntajes) {
+        out << s.fecha << "," << s.nombre << "," << s.puntaje << "\n";
+    }
+}
+
+void mostrarPuntajes() {
+    nodelay(stdscr, FALSE);
+    erase();
+
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    // Leer CSV
+    ifstream in(PUNTAJES_1P_FILE);
+    string line;
+    vector<vector<string>> rows;
+
+    if (in.good()) {
+        getline(in, line); // header
+        while (getline(in, line)) {
+            if (line.empty()) continue;
+            stringstream ss(line);
+            vector<string> c;
+            string p;
+            while (getline(ss, p, ',')) c.push_back(p);
+            if (c.size() >= 3) rows.push_back(c); // fecha,nombre,puntaje
+        }
+    }
+
+    // Coordenadas centradas
+    int tableW = 19 + 3 + 18 + 3 + 8; // FECHA + " | " + NOMBRE + " | " + PUNTAJE
+    int x0 = (max_x - tableW) / 2;
+    if (x0 < 0) x0 = 0;
+
+    // Título
+    attron(A_BOLD);
+    mvprintw(2, (max_x - (int)strlen("TOP 5 PUNTAJES"))/2, "TOP 5 PUNTAJES");
+    attroff(A_BOLD);
+
+    // Encabezado tabla
+    int y = 5;
+    attron(A_BOLD);
+    mvprintw(y, x0, "%-19s | %-18s | %-8s", "FECHA", "NOMBRE", "PUNTAJE");
+    attroff(A_BOLD);
+    y++;
+
+    mvprintw(y, x0, "--------------------+--------------------+----------");
+    y++;
+
+    if (rows.empty()) {
+        mvprintw(y, x0, "No hay puntajes registrados.");
+        y += 2;
+    } else {
+        // Mostrar (máximo 5)
+        for (int i = 0; i < (int)rows.size() && i < 5; i++) {
+            string fecha = rows[i][0];
+            string nombre = rows[i][1];
+            string puntaje = rows[i][2];
+
+            mvprintw(y + i, x0, "%-19.19s | %-18.18s | %8s",
+                     fecha.c_str(), nombre.c_str(), puntaje.c_str());
+        }
+        y += min(5, (int)rows.size()) + 1;
+    }
+
+    mvprintw(max_y - 2, (max_x - (int)strlen("Presiona cualquier tecla para volver al menu..."))/2,
+             "Presiona cualquier tecla para volver al menu...");
+    refresh();
+    getch();
+    nodelay(stdscr, TRUE);
+}
+void inicializarJugadores(Juego &j, bool modoUnJugador) {
+    // Si ya existen nombres, solo resetear stats/posiciones
+    if (modoUnJugador) {
+        if (j.jugadores.size() >= 1 && !j.jugadores[0].name.empty()) {
+            j.jugadores[0].vidas = 3;
+            j.jugadores[0].x = 1;
+            j.jugadores[0].y = 1;
+            j.jugadores[0].cantidad = 0;
+            return;
+        }
+    } else {
+        if (j.jugadores.size() >= 2 &&
+            !j.jugadores[0].name.empty() &&
+            !j.jugadores[1].name.empty()) {
+            j.jugadores[0].vidas = 3; j.jugadores[0].x = 1;  j.jugadores[0].y = 1;  j.jugadores[0].cantidad = 0;
+            j.jugadores[1].vidas = 3; j.jugadores[1].x = 29; j.jugadores[1].y = 13; j.jugadores[1].cantidad = 0;
+            return;
+        }
+    }
+
+    // Si no existían, crearlos y pedir nombres
+    j.jugadores.clear();
+
+    if (modoUnJugador) {
+        string n1 = pedirNombre("Ingresa tu nombre (Un jugador)");
+        Jugador p1 = {n1, 3, 1, 1, 0};
+        j.jugadores.push_back(p1);
+    } else {
+        string n1 = pedirNombre("Nombre Jugador 1");
+        string n2 = pedirNombre("Nombre Jugador 2");
+        Jugador p1 = {n1, 3, 1, 1, 0};
+        Jugador p2 = {n2, 3, 29, 13, 0};
+        j.jugadores.push_back(p1);
+        j.jugadores.push_back(p2);
+    }
+}
+int xCentrado(int max_x, int len) {
+    int x = (max_x - len) / 2;
+    return (x < 0) ? 0 : x;
+}
+
+void imprimirCentrado(int y, const string& s) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+    mvprintw(y, xCentrado(max_x, (int)s.size()), "%s", s.c_str());
+}
+
+// Imprime un bloque multilínea (como tu ASCII art) centrado
+void imprimirBloqueCentrado(int y0, const string& block) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    string line;
+    stringstream ss(block);
+    int y = y0;
+
+    while (getline(ss, line)) {
+        // (opcional) no imprimir líneas vacías al inicio
+        mvprintw(y, xCentrado(max_x, (int)line.size()), "%s", line.c_str());
+        y++;
+    }
+}
 // Funcion principal
 int main() {
     setlocale(LC_ALL, "");
-    
-    Juego bomberman;
-    
-    // Inicializar estado global
-    inicializarJugadores(bomberman, false);
-    bomberman.puntaje = 0;
-    bomberman.nivel = 1;
-    bomberman.nivelMaximoDesbloqueado = 1;  // Solo nivel 1 al inicio
-    bomberman.tiempoRestante = 180;
-    bomberman.enModoMultijugador = false;
-    
     // Inicializar mutex
     pthread_mutex_init(&mutex, NULL);
     
@@ -1113,8 +1327,18 @@ int main() {
     init_pair(9, COLOR_GREEN,   -1);  // vida
     init_pair(10,COLOR_CYAN,    -1);  // powerup
     init_pair(11, COLOR_RED, -1);  // bomba parpadeando
+    
+    Juego bomberman;
+    bomberman.jugadores.clear(); 
+    bomberman.puntaje = 0;
+    bomberman.nivel = 1;
+    bomberman.nivelMaximoDesbloqueado = 1;
+    bomberman.tiempoRestante = 180;
+    bomberman.enModoMultijugador = false;
+    bomberman.juegoActivo = false; 
+    
 
-    const char* titulo = R"( 
+    string titulo = R"( 
  /$$$$$$$                          /$$                                                            
 | $$__  $$                        | $$                                                            
 | $$  \ $$  /$$$$$$  /$$$$$$/$$$$ | $$$$$$$   /$$$$$$   /$$$$$$  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ 
@@ -1131,23 +1355,33 @@ int main() {
     int input;
     int seleccion = 0;
     bool menu = true;
-
+    nodelay(stdscr, FALSE);
     // Bucle principal del menu
     while(menu){
     erase();
-    mvprintw(0, 12, "%s", titulo);
-    
-    // Dibujar opciones del menu
-    for(int i=13; i<13+opciones.size(); i++){
-        if (i == seleccion + 13) {
-            attron(A_REVERSE);  // Resaltar opcion seleccionada
-            mvprintw(i, 40, "%s", opciones[i - 13].c_str());
-            attroff(A_REVERSE);
-        } else {
-            mvprintw(i, 40, "%s", opciones[i - 13].c_str());
-        }
+
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    // Dibuja titulo centrado desde y=1
+    imprimirBloqueCentrado(1, titulo);
+
+    int startY = 13;
+
+    // Opciones centradas
+    for (int idx = 0; idx < (int)opciones.size(); idx++) {
+        int y = startY + idx;
+        int x = xCentrado(max_x, (int)opciones[idx].size());
+
+        if (idx == seleccion) attron(A_REVERSE);
+        mvprintw(y, x, "%s", opciones[idx].c_str());
+        if (idx == seleccion) attroff(A_REVERSE);
     }
-    mvprintw(13 + opciones.size() + 2, 22, "Usa ▲  y ▼  para navegar y Enter para seleccionar");
+
+    // Instrucción centrada
+    imprimirCentrado(startY + (int)opciones.size() + 2,
+                    "Usa ▲ y ▼ para navegar y Enter para seleccionar");
+
     refresh();
     
     // Obtener entrada del usuario
@@ -1156,6 +1390,8 @@ int main() {
         seleccion--;  // Mover arriba
     } else if (input == KEY_DOWN && seleccion < opciones.size() - 1) {
         seleccion++;  // Mover abajo
+    } else if (input == ERR) {
+        continue;
     } else if (input == 10) {  // Enter presionado
 
         bool jugando = true;
@@ -1173,6 +1409,8 @@ int main() {
             colocarPuertaLejosDelSpawn(bomberman, bomberman.jugadores[0].x, bomberman.jugadores[0].y);
             
             bomberman.juegoActivo = true;
+            bomberman.runID++;
+            int miRun = bomberman.runID;
             
             pthread_t hiloEnems, hiloCrono, hiloAtaques;
             
@@ -1180,6 +1418,7 @@ int main() {
             DataJuego* datosEnems = new DataJuego;
             datosEnems->juego = &bomberman;
             datosEnems->juegoActivo = &bomberman.juegoActivo;
+            datosEnems->runID = miRun;
             pthread_create(&hiloEnems, NULL, hiloMovimientoEnemigos, datosEnems);
             pthread_detach(hiloEnems);
             
@@ -1187,6 +1426,7 @@ int main() {
             DataJuego* datosCrono = new DataJuego;
             datosCrono->juego = &bomberman;
             datosCrono->juegoActivo = &bomberman.juegoActivo;
+            datosCrono->runID = miRun;
             pthread_create(&hiloCrono, NULL, hiloCronometro, datosCrono);
             pthread_detach(hiloCrono);
             
@@ -1194,12 +1434,13 @@ int main() {
             DataJuego* datosAtaques = new DataJuego;
             datosAtaques->juego = &bomberman;
             datosAtaques->juegoActivo = &bomberman.juegoActivo;
+            datosAtaques->runID = miRun;
             pthread_create(&hiloAtaques, NULL, hiloAtaqueEnemigos, datosAtaques);
             pthread_detach(hiloAtaques);
 
             
             bool nivelActivo = true;
-            
+            nodelay(stdscr, TRUE);
             // Bucle de juego
             while(jugando && nivelActivo) {
                 dibujarMapa(bomberman, true);
@@ -1234,6 +1475,7 @@ int main() {
                     
                     // Acumular puntaje
                     bomberman.puntaje += (bomberman.tiempoRestante * 10) + 50;
+                    guardarPuntajesCSV(bomberman.jugadores[0].name, bomberman.puntaje);
                     
                     // Desbloquear siguiente nivel si es el actual
                     if (bomberman.nivel == bomberman.nivelMaximoDesbloqueado) {
@@ -1280,14 +1522,17 @@ int main() {
                         pthread_create(&hiloAtaques, NULL, hiloAtaqueEnemigos, datosAtaques2);
                         pthread_detach(hiloAtaques);
                         
-                    } 
-                    // Si selecciono salir
-                    else if (resultado == 6) {
+                    } else if (resultado == 6) {
                         jugando = false;
                         nivelActivo = false;
-                    }
-                    nodelay(stdscr, TRUE);
-                }
+                        bomberman.puerta.abierta = false;
+                        bomberman.puerta.x = 0;
+                        bomberman.puerta.y = 0;
+                        bomberman.bombas.clear();
+                        limpiarEstadoNivel(bomberman);
+                        break; 
+                } 
+                nodelay(stdscr, TRUE);
 
                 // Verificar game over
                 if(jugadorMuerto(bomberman.jugadores[0]) || bomberman.tiempoRestante <= 0) {
@@ -1297,10 +1542,11 @@ int main() {
                     mostrarGameOverUnJugador(bomberman);
                     jugando = false;
                     nivelActivo = false;
+                    guardarPuntajesCSV(bomberman.jugadores[0].name, bomberman.puntaje);
                 }
             }
         } 
-        
+    }
         // Opcion: Dos jugadores
         else if (opciones[seleccion] == "Dos jugadores") {
             bomberman.enModoMultijugador = true;
@@ -1380,30 +1626,36 @@ int main() {
                 
                 inicializarMapa(bomberman);
                 colocarPowerups(bomberman);
+                bomberman.jugadores.clear();
                 inicializarJugadores(bomberman, true);
                 inicializarEnemigos(bomberman, bomberman.nivel);
                 bomberman.mapa.posiciones[bomberman.jugadores[0].y][bomberman.jugadores[0].x] = '@';
                 colocarPuertaLejosDelSpawn(bomberman, bomberman.jugadores[0].x, bomberman.jugadores[0].y);
                 
                 bomberman.juegoActivo = true;
+                bomberman.runID++;
+                int miRun = bomberman.runID;
                 
                 pthread_t hiloEnems, hiloCrono, hiloAtaques;
                 
                 DataJuego* datosEnems = new DataJuego;
                 datosEnems->juego = &bomberman;
                 datosEnems->juegoActivo = &bomberman.juegoActivo;
+                datosEnems->runID = miRun;
                 pthread_create(&hiloEnems, NULL, hiloMovimientoEnemigos, datosEnems);
                 pthread_detach(hiloEnems);
                 
                 DataJuego* datosCrono = new DataJuego;
                 datosCrono->juego = &bomberman;
                 datosCrono->juegoActivo = &bomberman.juegoActivo;
+                datosCrono->runID = miRun;
                 pthread_create(&hiloCrono, NULL, hiloCronometro, datosCrono);
                 pthread_detach(hiloCrono);
                 
                 DataJuego* datosAtaques = new DataJuego;
                 datosAtaques->juego = &bomberman;
                 datosAtaques->juegoActivo = &bomberman.juegoActivo;
+                datosAtaques->runID = miRun;
                 pthread_create(&hiloAtaques, NULL, hiloAtaqueEnemigos, datosAtaques);
                 pthread_detach(hiloAtaques);
 
@@ -1422,10 +1674,17 @@ int main() {
                         case 'a': case 'A': moverJugador(bomberman, 0, -1, 0); break;
                         case 'd': case 'D': moverJugador(bomberman, 0, 1, 0); break;
                         case 'e': case 'E': colocarBomba(bomberman, 0); break;
-                        case 'y': case 'Y': 
-                            jugandoNivel = false;
+                        case 'y': case 'Y':
+                            jugandoNivel = false; 
                             nivelActivo = false;
+                            nodelay(stdscr, FALSE);
                             bomberman.juegoActivo = false;
+                            usleep(300000); 
+                            bomberman.puerta.abierta = false;
+                            bomberman.puerta.x = 0;
+                            bomberman.puerta.y = 0;
+                            bomberman.bombas.clear();
+                            limpiarEstadoNivel(bomberman); 
                             break;
                     }
 
@@ -1483,8 +1742,14 @@ int main() {
                             
                             
                         } else if (resultado == 6) {
-                            jugandoNivel = false;
+                            jugando = false;
                             nivelActivo = false;
+                            bomberman.puerta.abierta = false;
+                            bomberman.puerta.x = 0;
+                            bomberman.puerta.y = 0;
+                            bomberman.bombas.clear();
+                            limpiarEstadoNivel(bomberman);
+                            break;
                         }
                         nodelay(stdscr, TRUE);
                     }
@@ -1561,23 +1826,7 @@ int main() {
             
             mvprintw(max_y/2 - 8, max_x/2 - 10, "PUNTAJES");
             
-            mvprintw(max_y/2 - 5, max_x/2 - 20, "MODO UN JUGADOR:");
-            mvprintw(max_y/2 - 3, max_x/2 - 20, "Puntaje acumulado: %d", bomberman.puntaje);
-            mvprintw(max_y/2 - 1, max_x/2 - 20, "Nivel actual: %d", bomberman.nivel);
-            mvprintw(max_y/2 + 1, max_x/2 - 20, "Nivel maximo desbloqueado: %d", bomberman.nivelMaximoDesbloqueado);
-            
-            mvprintw(max_y/2 + 4, max_x/2 - 20, "MODO MULTIJUGADOR:");
-            if (bomberman.enModoMultijugador) {
-                mvprintw(max_y/2 + 6, max_x/2 - 20, "Player 1 - Puntaje: %d", bomberman.jugadores[0].cantidad);
-                mvprintw(max_y/2 + 8, max_x/2 - 20, "Player 2 - Puntaje: %d", bomberman.jugadores[1].cantidad);
-            } else {
-                mvprintw(max_y/2 + 6, max_x/2 - 20, "Player 1 - Puntaje: 0");
-                mvprintw(max_y/2 + 8, max_x/2 - 20, "Player 2 - Puntaje: 0");
-            }
-            
-            mvprintw(max_y - 2, max_x/2 - 22, "Presiona cualquier tecla para volver al menu...");
-            refresh();
-            getch();
+            mostrarPuntajes();
             nodelay(stdscr, TRUE);
         }
         
