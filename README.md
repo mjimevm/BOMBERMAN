@@ -1,60 +1,64 @@
 # BOMBERMAN
 
-Juego de Bomberman simple en C++ con soporte multijugador y múltiples niveles.
+Juego de Bomberman desarrollado en **C++**, utilizando **ncurses** para la interfaz en consola y **POSIX Threads (pthreads)** para la programación concurrente.
 
 ## Descripción
 
-Este proyecto implementa un juego de Bomberman con las siguientes características:
+Este proyecto implementa una versión del clásico Bomberman con soporte para:
 
-- **Modo un jugador** - Completa niveles destruyendo enemigos y abriendo puertas
-- **Modo dos jugadores** - Compite contra otro jugador en la misma pantalla
-- **Múltiples niveles** - 5 niveles desbloqueables progresivamente
-- **Sincronización con hilos** - Movimiento de enemigos, cronómetro y ataques en paralelo
-- **Interfaz ncurses** - Interfaz de terminal interactiva
-- **Sistema de powerups** - Aumenta rango de bombas (+) o vidas ($)
-- **Enemigos inteligentes** - Un enemigo especial (K) con llave que controla la puerta
+* Modo un jugador
+* Modo dos jugadores
+* Sistema de niveles progresivos
+* Generación dinámica de mapas
+* Powerups
+* Sistema de puntajes
+* Persistencia de récords en CSV
+* Programación concurrente mediante hilos
+* Sincronización con mutex y semáforos
+
+El juego fue desarrollado como parte del curso **CC3086 - Programación de Microprocesadores**.
 
 ---
 
-## Estructura del Proyecto
+# Estructura del Proyecto
 
 ```text
 BOMBERMAN/
 ├── README.md
 ├── .gitignore
 ├── Makefile
-└── src/                 ← EJECUTAR DESDE AQUÍ
-    ├── main.cpp         
-    ├── main             
-    └── bomberman         
+└── src/
+    ├── main.cpp
+    ├── bomberman
+    └── puntajes.csv
 ```
 
 ---
 
-## Requisitos
+# Requisitos
 
-- **C++ 11 o superior**
-- **ncurses** - Librería para interfaz de terminal
-- **pthreads** - Para manejo de hilos
+* C++11 o superior
+* ncurses
+* pthreads
 
 ---
 
-## Instalación
+# Instalación
 
-### Ubuntu/Debian
+## Ubuntu / Debian
 
 ```bash
 sudo apt update
 sudo apt install libncurses5-dev libncursesw5-dev
 ```
 
-### macOS (Homebrew)
+## macOS
 
 ```bash
 brew install ncurses
 ```
 
-### Windows (MSYS2)
+## Windows (MSYS2)
 
 ```bash
 pacman -S mingw-w64-x86_64-ncurses
@@ -62,15 +66,15 @@ pacman -S mingw-w64-x86_64-ncurses
 
 ---
 
-## Compilación y Ejecución
-
-### 1. Compilar el programa
+# Compilación
 
 ```bash
 g++ main.cpp -o bomberman -lpthread -lncurses
 ```
 
-### 2. Ejecutar el juego
+---
+
+# Ejecución
 
 ```bash
 ./bomberman
@@ -78,154 +82,325 @@ g++ main.cpp -o bomberman -lpthread -lncurses
 
 ---
 
-## Controles
+# Controles
 
-### Jugador 1 (Modo un jugador)
+## Jugador 1
 
-| Tecla | Acción |
-|------|------|
-| W | Arriba |
-| A | Izquierda |
-| S | Abajo |
-| D | Derecha |
-| E | Colocar bomba |
-| Y | Salir del juego |
-
-### Jugador 2 (Modo dos jugadores)
-
-| Tecla | Acción |
-|------|------|
-| I | Arriba |
-| J | Izquierda |
-| K | Abajo |
-| L | Derecha |
-| O | Colocar bomba |
-| Y | Salir del juego |
+| Tecla | Acción        |
+| ----- | ------------- |
+| W     | Arriba        |
+| A     | Izquierda     |
+| S     | Abajo         |
+| D     | Derecha       |
+| E     | Colocar bomba |
+| Y     | Salir         |
 
 ---
 
-## Mecánicas del Juego
+## Jugador 2
 
-### Modo Un Jugador
-
-- **Objetivo:** Destruir todos los enemigos (E) y luego eliminar al enemigo con llave (K) para abrir la puerta
-- **Puerta (X):** Se abre solo después de matar a K cuando no hay enemigos E
-- **Tiempo:** 3 minutos por nivel
-- **Vidas:** 3 vidas iniciales
-
-### Sistema de Puntuación
-
-| Acción | Puntos |
-|------|------|
-| Destruir muro (#) | 10 |
-| Eliminar enemigo (E) | 100 |
-| Pasar nivel | 50 + tiempo restante |
+| Tecla | Acción        |
+| ----- | ------------- |
+| I     | Arriba        |
+| J     | Izquierda     |
+| K     | Abajo         |
+| L     | Derecha       |
+| O     | Colocar bomba |
 
 ---
 
-### Modo Dos Jugadores
+# Mecánicas del Juego
 
-- **Objetivo:** Ser el último jugador en pie o tener más vidas
-- **Enemigos:** Siempre aparecen 4 enemigos sin llave
-- **Tiempo:** Sin límite de tiempo
+## Modo Un Jugador
 
-### Sistema de Puntuación
+### Objetivo
 
-| Acción | Puntos |
-|------|------|
-| Destruir muro (#) | 10 |
-| Eliminar enemigo (E) | 100 |
+* Eliminar todos los enemigos comunes (**E**)
+* Encontrar y derrotar al enemigo con llave (**K**)
+* Abrir la puerta
+* Avanzar al siguiente nivel
 
----
+### Características
 
-## Características Técnicas
-
-### Sincronización
-
-El juego utiliza múltiples mecanismos de concurrencia:
-
-- **Mutex** - Protege acceso a estructuras compartidas
-- **Semáforos** - Limita a 3 bombas activas por jugador
-
-### Hilos Implementados
-
-- Movimiento de enemigos (cada 2 segundos)
-- Cronómetro (cada 1 segundo)
-- Ataques de enemigos (cada 2 segundos)
-- Explosión de bombas (detonación tras 3 segundos)
+* 3 vidas iniciales
+* Cronómetro de 3 minutos
+* Powerups ocultos
+* Sistema de puntuación
 
 ---
 
-## Mapa
+## Modo Dos Jugadores
 
-- **Tamaño:** 31 x 15 celdas
-- **Muros indestructibles:** Bordes y patrón de tablero (=)
-- **Muros destructibles:** Aleatorios (#)
-- **Zonas seguras:** Áreas protegidas en las esquinas iniciales
+### Objetivo
 
----
+* Eliminar al oponente
+* Sobrevivir más tiempo
+* Obtener la mayor cantidad de puntos
 
-## Explosiones
+### Características
 
-- Forma de cruz
-- Se expanden en 4 direcciones
-- Destruyen:
-  - Muros destructibles
-  - Enemigos
-  - Jugadores
-- Duración aproximada: 0.7 segundos
+* Dos jugadores simultáneos
+* Bombas independientes
+* Enemigos compartidos
+* Sin límite de tiempo
 
 ---
 
-## Niveles
+# Sistema de Puntuación
+
+## Un Jugador
+
+| Acción           | Puntos               |
+| ---------------- | -------------------- |
+| Destruir muro    | 10                   |
+| Eliminar enemigo | 100                  |
+| Completar nivel  | 50 + tiempo restante |
+
+---
+
+## Dos Jugadores
+
+| Acción           | Puntos |
+| ---------------- | ------ |
+| Destruir muro    | 10     |
+| Eliminar enemigo | 100    |
+
+---
+
+# Powerups
+
+| Símbolo | Efecto                        |
+| ------- | ----------------------------- |
+| +       | Incrementa rango de explosión |
+| $       | Incrementa vidas              |
+
+Los powerups aparecen ocultos detrás de muros destructibles.
+
+---
+
+# Mapa
+
+## Dimensiones
+
+```text
+31 columnas x 15 filas
+```
+
+## Elementos
+
+| Símbolo | Descripción         |
+| ------- | ------------------- |
+| @       | Jugador             |
+| E       | Enemigo             |
+| K       | Enemigo con llave   |
+| O       | Bomba               |
+| *       | Explosión           |
+| #       | Muro destructible   |
+| =       | Muro indestructible |
+| X       | Puerta cerrada      |
+| >       | Puerta abierta      |
+| +       | Powerup de rango    |
+| $       | Powerup de vida     |
+
+---
+
+# Sistema de Bombas
+
+## Características
+
+* Máximo 3 bombas activas por jugador
+* Explosión después de 3 segundos
+* Alcance configurable mediante powerups
+* Explosión en forma de cruz
+
+## Efectos
+
+Las explosiones pueden destruir:
+
+* Muros destructibles
+* Enemigos
+* Jugadores
+* Revelar powerups
+* Abrir caminos
+
+Duración aproximada:
+
+```text
+0.7 segundos
+```
+
+---
+
+# Niveles
 
 | Nivel | Enemigos |
-|------|------|
-| Nivel 1 | 1 enemigo |
-| Nivel 2 | 2 enemigos |
-| Nivel 3 | 3 enemigos |
-| Nivel 4 | 4 enemigos |
-| Nivel 5 | 5 enemigos |
+| ----- | -------- |
+| 1     | 1        |
+| 2     | 2        |
+| 3     | 3        |
+| 4     | 4        |
+| 5     | 5        |
 
-Cada nivel se desbloquea al completar el anterior.
-
----
-
-## Menú Principal
-
-- Un jugador
-- Dos jugadores
-- Seleccionar Nivel
-- Controles
-- Reglas
-- Puntajes
-- Salir
+Cada nivel debe completarse para desbloquear el siguiente.
 
 ---
 
-## Símbolos del Juego
+# Menú Principal
 
-| Símbolo | Significado |
-|------|------|
-| @ | Jugador |
-| E | Enemigo común |
-| K | Enemigo con llave |
-| O | Bomba |
-| * | Explosión |
-| # | Muro destructible |
-| = | Muro indestructible |
-| X | Puerta cerrada |
-| > | Puerta abierta |
-| $ | Powerup: aumenta rango de bomba |
-| + | Powerup: vidas |
+* Un Jugador
+* Dos Jugadores
+* Seleccionar Nivel
+* Controles
+* Reglas
+* Puntajes
+* Salir
 
 ---
 
-## Solución de Problemas
+# Concurrencia y Paralelismo
 
-### Error: `"ncurses.h: No such file or directory"`
+El juego implementa programación concurrente utilizando **POSIX Threads (pthreads)**.
 
-Instala las librerías necesarias:
+## Hilos Implementados
+
+### Hilo de Movimiento de Enemigos
+
+Responsable de:
+
+* Mover enemigos automáticamente
+* Elegir direcciones aleatorias
+* Actualizar posiciones cada 2 segundos
+
+---
+
+### Hilo de Ataque de Enemigos
+
+Responsable de:
+
+* Detectar colisiones entre enemigos y jugadores
+* Reducir vidas cuando existe contacto
+
+---
+
+### Hilo de Cronómetro
+
+Responsable de:
+
+* Reducir el tiempo restante del nivel
+* Finalizar la partida cuando el tiempo llega a cero
+
+---
+
+### Hilo de Bombas
+
+Responsable de:
+
+* Esperar el tiempo de detonación
+* Ejecutar explosiones
+* Aplicar daño
+* Limpiar explosiones
+* Liberar espacio para nuevas bombas
+
+Cada bomba genera su propio hilo independiente.
+
+---
+
+# Mecanismos de Sincronización
+
+## Mutex Global
+
+Se utiliza un mutex para proteger recursos compartidos:
+
+```cpp
+pthread_mutex_t mutex;
+```
+
+Protege:
+
+* Mapa
+* Jugadores
+* Enemigos
+* Bombas
+* Puerta
+* Puntajes
+* Cronómetro
+
+---
+
+## Semáforos
+
+Se utilizan dos semáforos:
+
+```cpp
+sem_t sem1;
+sem_t sem2;
+```
+
+Su función es limitar:
+
+```text
+Máximo 3 bombas activas por jugador
+```
+
+Operaciones utilizadas:
+
+```cpp
+sem_trywait()
+sem_post()
+```
+
+---
+
+# Arquitectura General
+
+La estructura principal del programa es:
+
+```cpp
+struct Juego
+```
+
+La cual almacena:
+
+* Mapa
+* Jugadores
+* Enemigos
+* Bombas
+* Powerups
+* Puerta
+* Puntajes
+* Tiempo restante
+* Estado de la partida
+
+Esto permite centralizar todo el estado del juego y compartirlo entre los distintos hilos.
+
+---
+
+# Archivo de Puntajes
+
+Los puntajes se almacenan en:
+
+```text
+puntajes.csv
+```
+
+Formato:
+
+```csv
+fecha,nombre,puntaje
+```
+
+Ejemplo:
+
+```csv
+2025-05-31,Alejandro,1650
+2025-05-31,Andres,1200
+```
+
+---
+
+# Solución de Problemas
+
+## Error: ncurses.h no encontrado
 
 ```bash
 sudo apt install libncurses5-dev libncursesw5-dev
@@ -233,19 +408,17 @@ sudo apt install libncurses5-dev libncursesw5-dev
 
 ---
 
-### El juego se ve cortado en la terminal
+## Pantalla cortada
 
-Asegúrate de que tu terminal tenga al menos:
+Se recomienda una terminal de al menos:
 
 ```text
-35 columnas x 20 filas
+80 columnas x 30 filas
 ```
 
 ---
 
-### Las teclas no responden correctamente
-
-Algunos terminales requieren:
+## Problemas con las teclas
 
 ```bash
 export TERM=xterm
@@ -254,25 +427,27 @@ export TERM=xterm
 
 ---
 
-## Tecnologías Utilizadas
+# Tecnologías Utilizadas
 
-- **C++11** - Lenguaje de programación
-- **ncurses** - Interfaz de usuario en terminal
-- **pthreads** - Manejo de hilos POSIX
-- **Git/GitHub** - Control de versiones
-
----
-
-## Autores
-
-- **Andrés Pineda** – 25212  
-- **Diego Rodríguez** – 25215  
-- **Jimena Vásquez** – 25092  
-- **Alejandro Sagastume** – 25257
+* C++11
+* ncurses
+* pthreads
+* STL (vector, string, fstream)
+* Git
+* GitHub
 
 ---
 
-## Curso
+# Autores
 
-**CC3086 - Programación de Microprocesadores**  
-Universidad del Valle de Guatemala
+* Andrés Pineda – 25212
+* Diego Rodríguez – 25215
+* Jimena Vásquez – 25092
+* Alejandro Sagastume – 25257
+
+---
+
+# Curso
+
+**CC3086 - Programación de Microprocesadores**
+**Universidad del Valle de Guatemala**
