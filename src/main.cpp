@@ -1535,7 +1535,7 @@ int main() {
     bomberman.puntaje = 0;
     bomberman.nivel = 1;
     bomberman.nivelMaximoDesbloqueado = 1;
-    bomberman.tiempoRestante = 10;
+    bomberman.tiempoRestante = 180;
     bomberman.enModoMultijugador = false;
     bomberman.juegoActivo = false; 
     
@@ -1652,11 +1652,11 @@ int main() {
 
             limpiarEstadoNivel(bomberman);
             
-            bomberman.tiempoRestante = 10;
+            bomberman.tiempoRestante = 180;
             bomberman.puntaje = 0;
 
             bomberman.enModoMultijugador = false;
-            bomberman.tiempoRestante = 10;
+            bomberman.tiempoRestante = 180;
             
             inicializarMapa(bomberman);
             colocarPowerups(bomberman);
@@ -1748,7 +1748,7 @@ int main() {
 
                     if (resultado >= 1 && resultado <= 5) {
                         bomberman.nivel = resultado;
-                        bomberman.tiempoRestante = 10;
+                        bomberman.tiempoRestante = 180;
                         
                         limpiarEstadoNivel(bomberman);
                         inicializarMapa(bomberman);
@@ -1810,7 +1810,7 @@ int main() {
 
                     flushinp();
 
-                    bomberman.tiempoRestante = 10;
+                    bomberman.tiempoRestante = 180;
                     bomberman.juegoActivo = false;
 
                     guardarPuntajesCSV(
@@ -1898,7 +1898,7 @@ int main() {
                 limpiarEstadoNivel(bomberman);
                 bomberman.enModoMultijugador = false;
                 bomberman.nivel = nivelSeleccionado;
-                bomberman.tiempoRestante = 10;
+                bomberman.tiempoRestante = 180;
                 
                 inicializarMapa(bomberman);
                 colocarPowerups(bomberman);
@@ -1985,7 +1985,7 @@ int main() {
                         
                         if (resultado >= 1 && resultado <= 5) {
                             bomberman.nivel = resultado;
-                            bomberman.tiempoRestante = 10;
+                            bomberman.tiempoRestante = 180;
                             
                             limpiarEstadoNivel(bomberman);
                             inicializarMapa(bomberman);
