@@ -1,22 +1,22 @@
 # BOMBERMAN
 
-Juego de Bomberman desarrollado en **C++**, utilizando **ncurses** para la interfaz en consola y **POSIX Threads (pthreads)** para la programación concurrente.
+Juego de Bomberman desarrollado en **C++**, utilizando **ncurses** para la interfaz gráfica en consola y **POSIX Threads (pthreads)** para la ejecución concurrente de los diferentes componentes del juego.
 
 ## Descripción
 
 Este proyecto implementa una versión del clásico Bomberman con soporte para:
 
-* Modo un jugador
-* Modo dos jugadores
-* Sistema de niveles progresivos
-* Generación dinámica de mapas
-* Powerups
-* Sistema de puntajes
-* Persistencia de récords en CSV
-* Programación concurrente mediante hilos
-* Sincronización con mutex y semáforos
+* Modo un jugador.
+* Modo dos jugadores.
+* Sistema de niveles progresivos.
+* Generación dinámica de mapas.
+* Sistema de puntajes.
+* Persistencia de récords en CSV.
+* Powerups.
+* Programación concurrente mediante hilos.
+* Sincronización utilizando mutex y semáforos.
 
-El juego fue desarrollado como parte del curso **CC3086 - Programación de Microprocesadores**.
+El objetivo principal es utilizar bombas para destruir obstáculos, derrotar enemigos y avanzar entre niveles, o competir contra otro jugador en el modo multijugador.
 
 ---
 
@@ -38,8 +38,8 @@ BOMBERMAN/
 # Requisitos
 
 * C++11 o superior
-* ncurses
-* pthreads
+* ncurses / ncursesw
+* POSIX Threads (pthread)
 
 ---
 
@@ -69,7 +69,7 @@ pacman -S mingw-w64-x86_64-ncurses
 # Compilación
 
 ```bash
-g++ main.cpp -o bomberman -lpthread -lncurses
+g++ main.cpp -o bomberman -lpthread -lncursesw
 ```
 
 ---
@@ -86,14 +86,14 @@ g++ main.cpp -o bomberman -lpthread -lncurses
 
 ## Jugador 1
 
-| Tecla | Acción        |
-| ----- | ------------- |
-| W     | Arriba        |
-| A     | Izquierda     |
-| S     | Abajo         |
-| D     | Derecha       |
-| E     | Colocar bomba |
-| Y     | Salir         |
+| Tecla | Acción          |
+| ----- | --------------- |
+| W     | Arriba          |
+| A     | Izquierda       |
+| S     | Abajo           |
+| D     | Derecha         |
+| E     | Colocar bomba   |
+| Y     | Salir del juego |
 
 ---
 
@@ -115,17 +115,18 @@ g++ main.cpp -o bomberman -lpthread -lncurses
 
 ### Objetivo
 
-* Eliminar todos los enemigos comunes (**E**)
-* Encontrar y derrotar al enemigo con llave (**K**)
-* Abrir la puerta
-* Avanzar al siguiente nivel
+* Eliminar todos los enemigos comunes (**♣**).
+* Derrotar al enemigo con llave (**♠**).
+* Abrir la puerta (**▣**).
+* Alcanzar la salida para avanzar al siguiente nivel.
 
 ### Características
 
-* 3 vidas iniciales
-* Cronómetro de 3 minutos
-* Powerups ocultos
-* Sistema de puntuación
+* 3 vidas iniciales.
+* Cronómetro de 3 minutos por nivel.
+* Sistema de puntajes.
+* Powerups ocultos.
+* Progresión entre niveles.
 
 ---
 
@@ -133,16 +134,16 @@ g++ main.cpp -o bomberman -lpthread -lncurses
 
 ### Objetivo
 
-* Eliminar al oponente
-* Sobrevivir más tiempo
-* Obtener la mayor cantidad de puntos
+* Eliminar al jugador rival.
+* Obtener más puntos que el oponente.
+* Sobrevivir más tiempo.
 
 ### Características
 
-* Dos jugadores simultáneos
-* Bombas independientes
-* Enemigos compartidos
-* Sin límite de tiempo
+* Dos jugadores simultáneos.
+* Bombas independientes.
+* Enemigos compartidos.
+* Sin límite de tiempo.
 
 ---
 
@@ -169,10 +170,10 @@ g++ main.cpp -o bomberman -lpthread -lncurses
 
 # Powerups
 
-| Símbolo | Efecto                        |
-| ------- | ----------------------------- |
-| +       | Incrementa rango de explosión |
-| $       | Incrementa vidas              |
+| Símbolo | Efecto                                         |
+| ------- | ---------------------------------------------- |
+| ♦       | Incrementa el rango de explosión de las bombas |
+| ♥       | Otorga una vida adicional                      |
 
 Los powerups aparecen ocultos detrás de muros destructibles.
 
@@ -186,21 +187,22 @@ Los powerups aparecen ocultos detrás de muros destructibles.
 31 columnas x 15 filas
 ```
 
-## Elementos
+## Elementos del Juego
 
-| Símbolo | Descripción         |
-| ------- | ------------------- |
-| @       | Jugador             |
-| E       | Enemigo             |
-| K       | Enemigo con llave   |
-| O       | Bomba               |
-| *       | Explosión           |
-| #       | Muro destructible   |
-| =       | Muro indestructible |
-| X       | Puerta cerrada      |
-| >       | Puerta abierta      |
-| +       | Powerup de rango    |
-| $       | Powerup de vida     |
+| Símbolo     | Descripción                    |
+| ----------- | ------------------------------ |
+| ●           | Jugador 1                      |
+| ⚬           | Jugador 2                      |
+| ♣           | Enemigo común                  |
+| ♠           | Enemigo con llave              |
+| ¤           | Bomba                          |
+| ✦           | Explosión                      |
+| #           | Muro destructible              |
+| ╔ ╗ ╚ ╝ ═ ║ | Bordes y muros indestructibles |
+| □           | Puerta cerrada                 |
+| ▣           | Puerta abierta                 |
+| ♦           | Powerup de rango               |
+| ♥           | Powerup de vida                |
 
 ---
 
@@ -208,20 +210,27 @@ Los powerups aparecen ocultos detrás de muros destructibles.
 
 ## Características
 
-* Máximo 3 bombas activas por jugador
-* Explosión después de 3 segundos
-* Alcance configurable mediante powerups
-* Explosión en forma de cruz
+* Máximo 3 bombas activas por jugador.
+* Explosión automática después de 3 segundos.
+* Alcance ampliable mediante powerups.
+* Explosión en forma de cruz.
 
 ## Efectos
 
 Las explosiones pueden destruir:
 
-* Muros destructibles
-* Enemigos
-* Jugadores
-* Revelar powerups
-* Abrir caminos
+* Muros destructibles.
+* Enemigos.
+* Jugadores.
+* Obstáculos.
+* Revelar powerups ocultos.
+
+## Elementos Relacionados
+
+| Símbolo | Descripción       |
+| ------- | ----------------- |
+| ¤       | Bomba activa      |
+| ✦       | Área de explosión |
 
 Duración aproximada:
 
@@ -233,19 +242,21 @@ Duración aproximada:
 
 # Niveles
 
-| Nivel | Enemigos |
-| ----- | -------- |
-| 1     | 1        |
-| 2     | 2        |
-| 3     | 3        |
-| 4     | 4        |
-| 5     | 5        |
+| Nivel   | Cantidad de Enemigos |
+| ------- | -------------------- |
+| Nivel 1 | 1                    |
+| Nivel 2 | 2                    |
+| Nivel 3 | 3                    |
+| Nivel 4 | 4                    |
+| Nivel 5 | 5                    |
 
 Cada nivel debe completarse para desbloquear el siguiente.
 
 ---
 
 # Menú Principal
+
+El juego incluye las siguientes opciones:
 
 * Un Jugador
 * Dos Jugadores
@@ -259,7 +270,7 @@ Cada nivel debe completarse para desbloquear el siguiente.
 
 # Concurrencia y Paralelismo
 
-El juego implementa programación concurrente utilizando **POSIX Threads (pthreads)**.
+El proyecto implementa programación concurrente utilizando **POSIX Threads (pthreads)**.
 
 ## Hilos Implementados
 
@@ -267,55 +278,50 @@ El juego implementa programación concurrente utilizando **POSIX Threads (pthrea
 
 Responsable de:
 
-* Mover enemigos automáticamente
-* Elegir direcciones aleatorias
-* Actualizar posiciones cada 2 segundos
-
----
+* Seleccionar direcciones aleatorias.
+* Actualizar posiciones de enemigos.
+* Simular movimiento autónomo cada 2 segundos.
 
 ### Hilo de Ataque de Enemigos
 
 Responsable de:
 
-* Detectar colisiones entre enemigos y jugadores
-* Reducir vidas cuando existe contacto
-
----
+* Detectar colisiones entre enemigos y jugadores.
+* Reducir vidas cuando existe contacto.
 
 ### Hilo de Cronómetro
 
 Responsable de:
 
-* Reducir el tiempo restante del nivel
-* Finalizar la partida cuando el tiempo llega a cero
-
----
+* Reducir el tiempo restante cada segundo.
+* Finalizar la partida cuando el tiempo llega a cero.
 
 ### Hilo de Bombas
 
 Responsable de:
 
-* Esperar el tiempo de detonación
-* Ejecutar explosiones
-* Aplicar daño
-* Limpiar explosiones
-* Liberar espacio para nuevas bombas
+* Esperar el tiempo de detonación.
+* Ejecutar explosiones.
+* Aplicar daño a enemigos y jugadores.
+* Limpiar explosiones.
+* Liberar espacio para nuevas bombas.
 
-Cada bomba genera su propio hilo independiente.
+Cada bomba genera un hilo independiente.
 
 ---
 
 # Mecanismos de Sincronización
 
-## Mutex Global
+| Mecanismo / Recurso    | Implementación          | Propósito                            |
+| ---------------------- | ----------------------- | ------------------------------------ |
+| Mutex Global           | `pthread_mutex_t mutex` | Evitar condiciones de carrera        |
+| Semáforo Jugador 1     | `sem_t sem1`            | Limitar a 3 bombas activas           |
+| Semáforo Jugador 2     | `sem_t sem2`            | Limitar a 3 bombas activas           |
+| `pthread_mutex_lock()` | Exclusión mutua         | Acceso seguro a recursos compartidos |
+| `sem_trywait()`        | Reserva de recurso      | Verificar disponibilidad de bombas   |
+| `sem_post()`           | Liberación de recurso   | Permitir nuevas bombas               |
 
-Se utiliza un mutex para proteger recursos compartidos:
-
-```cpp
-pthread_mutex_t mutex;
-```
-
-Protege:
+## Recursos Compartidos Protegidos
 
 * Mapa
 * Jugadores
@@ -324,54 +330,31 @@ Protege:
 * Puerta
 * Puntajes
 * Cronómetro
-
----
-
-## Semáforos
-
-Se utilizan dos semáforos:
-
-```cpp
-sem_t sem1;
-sem_t sem2;
-```
-
-Su función es limitar:
-
-```text
-Máximo 3 bombas activas por jugador
-```
-
-Operaciones utilizadas:
-
-```cpp
-sem_trywait()
-sem_post()
-```
+* Powerups
 
 ---
 
 # Arquitectura General
 
-La estructura principal del programa es:
+La estructura principal del proyecto es:
 
 ```cpp
 struct Juego
 ```
 
-La cual almacena:
+Esta estructura centraliza:
 
-* Mapa
-* Jugadores
-* Enemigos
-* Bombas
-* Powerups
-* Puerta
-* Puntajes
-* Tiempo restante
-* Estado de la partida
+* Estado del mapa.
+* Información de jugadores.
+* Enemigos.
+* Bombas activas.
+* Powerups.
+* Puerta.
+* Puntajes.
+* Tiempo restante.
+* Estado de la partida.
 
-Esto permite centralizar todo el estado del juego y compartirlo entre los distintos hilos.
+Todos los hilos comparten esta estructura mediante mecanismos de sincronización.
 
 ---
 
@@ -430,8 +413,8 @@ export TERM=xterm
 # Tecnologías Utilizadas
 
 * C++11
-* ncurses
-* pthreads
+* ncurses / ncursesw
+* POSIX Threads (pthreads)
 * STL (vector, string, fstream)
 * Git
 * GitHub
@@ -449,5 +432,5 @@ export TERM=xterm
 
 # Curso
 
-**CC3086 - Programación de Microprocesadores**
+**CC3086 – Programación de Microprocesadores**
 **Universidad del Valle de Guatemala**
