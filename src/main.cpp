@@ -394,13 +394,13 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
 
                 case '@':
                     attron(COLOR_PAIR(3) | A_BOLD);
-                    mvaddwstr(y, x + offsetX, L"●");   // jugador 1
+                    mvaddwstr(y, x + offsetX, L"●");   // Jugador 1 (Verde)
                     attroff(COLOR_PAIR(3) | A_BOLD);
                     break;
                 case '&':
-                    attron(COLOR_PAIR(3) | A_BOLD);
-                    mvaddwstr(y, x + offsetX, L"⚬");   // jugador 2
-                    attroff(COLOR_PAIR(3) | A_BOLD);
+                    attron(COLOR_PAIR(6) | A_BOLD);
+                    mvaddwstr(y, x + offsetX, L"⚬");   // Jugador 2 (Cian)
+                    attroff(COLOR_PAIR(6) | A_BOLD);
                     break;
                 case 'O':
                     if (parpadeo) { // bomba parpadeando
@@ -1084,50 +1084,135 @@ bool jugadorMuerto(const Jugador& jugador) {
     return jugador.vidas <= 0;
 }
 
-// Pantalla de game over en modo un jugador
 void mostrarGameOverUnJugador(const Juego& j) {
     erase();
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
     
-    mvprintw(max_y/2 - 3, max_x/2 - 5, "GAME OVER");
-    mvprintw(max_y/2 - 1, max_x/2 - 12, "Tu puntaje final: %d", j.puntaje);
-    mvprintw(max_y/2 + 2, max_x/2 - 22, "Presiona cualquier tecla para volver al menu...");
+    int marcoAncho = 70;
+    int marcoAlto  = 15;
+    int marcoX = (max_x - marcoAncho) / 2;
+    int marcoY = (max_y - marcoAlto) / 2;
+
+    // Dibujar marco estilizado de color Rojo (Peligro/Muerte)
+    attron(COLOR_PAIR(4));
+    mvaddwstr(marcoY, marcoX, L"╔");
+    for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY, marcoX + i, L"═");
+    mvaddwstr(marcoY, marcoX + marcoAncho - 1, L"╗");
+    for(int i = 1; i < marcoAlto - 1; i++) {
+        mvaddwstr(marcoY + i, marcoX, L"║");
+        mvaddwstr(marcoY + i, marcoX + marcoAncho - 1, L"║");
+    }
+    mvaddwstr(marcoY + marcoAlto - 1, marcoX, L"╚");
+    for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY + marcoAlto - 1, marcoX + i, L"═");
+    mvaddwstr(marcoY + marcoAlto - 1, marcoX + marcoAncho - 1, L"╝");
+    attroff(COLOR_PAIR(4));
+
+    attron(COLOR_PAIR(4) | A_BOLD);
+    string goArt1 = "▄████   ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄   ▄████▄ ▄▄ ▄▄ ▄▄▄▄▄ ▄▄▄▄  ";
+    string goArt2 = "██  ▄▄▄ ██▀██ ██▀▄▀██ ██▄▄     ██  ██ ██▄██ ██▄▄  ██▄█▄ ";
+    string goArt3 = " ▀███▀  ██▀██ ██   ██ ██▄▄▄    ▀████▀  ▀█▀  ██▄▄▄ ██ ██ ";
+    
+    mvprintw(marcoY + 2, (max_x - 54) / 2, "%s", goArt1.c_str());
+    mvprintw(marcoY + 3, (max_x - 54) / 2, "%s", goArt2.c_str());
+    mvprintw(marcoY + 4, (max_x - 54) / 2, "%s", goArt3.c_str());
+    attroff(COLOR_PAIR(4) | A_BOLD);
+
+
+    attron(COLOR_PAIR(7));
+    mvprintw(marcoY + 6, marcoX + 6, "──────────────────────────────────────────────────────────");
+    attroff(COLOR_PAIR(7));
+
+
+    attron(COLOR_PAIR(2) | A_BOLD);
+    char puntajeTxt[64];
+    snprintf(puntajeTxt, sizeof(puntajeTxt), "Puntaje Final: %d pts", j.puntaje);
+    mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(puntajeTxt)) / 2, "%s", puntajeTxt);
+    attroff(COLOR_PAIR(2) | A_BOLD);
+
+
+    attron(COLOR_PAIR(7));
+    const char* insTxt = "Presiona cualquier tecla para volver al Menú Principal...";
+    mvprintw(marcoY + 11, marcoX + (marcoAncho - (int)strlen(insTxt)) / 2, "%s", insTxt);
+    attroff(COLOR_PAIR(7));
+
     refresh();
     getch();
     nodelay(stdscr, TRUE);
 }
 
-// Pantalla de fin de juego en modo dos jugadores
 void mostrarGanadorMultijugador(const Juego& j) {
     erase();
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
     
-    mvprintw(max_y/2 - 5, max_x/2 - 8, "FIN DEL JUEGO");
-    mvprintw(max_y/2 - 2, max_x/2 - 15, "========================");
-    
-    // Determinar ganador por vidas
-    if (j.jugadores[0].vidas > j.jugadores[1].vidas) {
-        mvprintw(max_y/2, max_x/2 - 15, "GANADOR: Player 1");
-        mvprintw(max_y/2 + 2, max_x/2 - 15, "Puntaje: %d", j.jugadores[0].cantidad);
-        mvprintw(max_y/2 + 4, max_x/2 - 15, "========================");
-        mvprintw(max_y/2 + 6, max_x/2 - 15, "PERDEDOR: Player 2");
-        mvprintw(max_y/2 + 8, max_x/2 - 15, "Puntaje: %d", j.jugadores[1].cantidad);
-    } else if (j.jugadores[1].vidas > j.jugadores[0].vidas) {
-        mvprintw(max_y/2, max_x/2 - 15, "GANADOR: Player 2");
-        mvprintw(max_y/2 + 2, max_x/2 - 15, "Puntaje: %d", j.jugadores[1].cantidad);
-        mvprintw(max_y/2 + 4, max_x/2 - 15, "========================");
-        mvprintw(max_y/2 + 6, max_x/2 - 15, "PERDEDOR: Player 1");
-        mvprintw(max_y/2 + 8, max_x/2 - 15, "Puntaje: %d", j.jugadores[0].cantidad);
-    } else {
-        // Empate
-        mvprintw(max_y/2, max_x/2 - 15, "EMPATE");
-        mvprintw(max_y/2 + 2, max_x/2 - 15, "Player 1 - Puntaje: %d", j.jugadores[0].cantidad);
-        mvprintw(max_y/2 + 4, max_x/2 - 15, "Player 2 - Puntaje: %d", j.jugadores[1].cantidad);
+    int marcoAncho = 70;
+    int marcoAlto  = 18;
+    int marcoX = (max_x - marcoAncho) / 2;
+    int marcoY = (max_y - marcoAlto) / 2;
+
+    // Marco exterior en color Magenta para que resalte el color de los jugadores
+    attron(COLOR_PAIR(5));
+    mvaddwstr(marcoY, marcoX, L"╔");
+    for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY, marcoX + i, L"═");
+    mvaddwstr(marcoY, marcoX + marcoAncho - 1, L"╗");
+    for(int i = 1; i < marcoAlto - 1; i++) {
+        mvaddwstr(marcoY + i, marcoX, L"║");
+        mvaddwstr(marcoY + i, marcoX + marcoAncho - 1, L"║");
     }
+    mvaddwstr(marcoY + marcoAlto - 1, marcoX, L"╚");
+    for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY + marcoAlto - 1, marcoX + i, L"═");
+    mvaddwstr(marcoY + marcoAlto - 1, marcoX + marcoAncho - 1, L"╝");
+    attroff(COLOR_PAIR(5));
+
+    attron(COLOR_PAIR(4) | A_BOLD);
+    string goArt1 = "▄████   ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄   ▄████▄ ▄▄ ▄▄ ▄▄▄▄▄ ▄▄▄▄  ";
+    string goArt2 = "██  ▄▄▄ ██▀██ ██▀▄▀██ ██▄▄     ██  ██ ██▄██ ██▄▄  ██▄█▄ ";
+    string goArt3 = " ▀███▀  ██▀██ ██   ██ ██▄▄▄    ▀████▀  ▀█▀  ██▄▄▄ ██ ██ ";
     
-    mvprintw(max_y - 2, max_x/2 - 22, "Presiona cualquier tecla para volver al menu...");
+    mvprintw(marcoY + 2, (max_x - 54) / 2, "%s", goArt1.c_str());
+    mvprintw(marcoY + 3, (max_x - 54) / 2, "%s", goArt2.c_str());
+    mvprintw(marcoY + 4, (max_x - 54) / 2, "%s", goArt3.c_str());
+    attroff(COLOR_PAIR(4) | A_BOLD);
+
+    attron(COLOR_PAIR(7));
+    mvprintw(marcoY + 6, marcoX + 6, "──────────────────────────────────────────────────────────");
+    attroff(COLOR_PAIR(7));
+
+    // Lógica de Ganador con J2 configurado en color Cian
+    if (j.jugadores[0].vidas > j.jugadores[1].vidas) {
+        attron(COLOR_PAIR(3) | A_BOLD); // Verde
+        const char* win = "¡GANADOR JUGADOR 1 (VERDE)!";
+        mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(win)) / 2, "%s", win);
+        attroff(COLOR_PAIR(3) | A_BOLD);
+    } 
+    else if (j.jugadores[1].vidas > j.jugadores[0].vidas) {
+        attron(COLOR_PAIR(6) | A_BOLD); // Cian
+        const char* win = "¡GANADOR JUGADOR 2 (CIAN)!";
+        mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(win)) / 2, "%s", win);
+        attroff(COLOR_PAIR(6) | A_BOLD);
+    } 
+    else {
+        attron(COLOR_PAIR(7) | A_BOLD); // Blanco / Empate
+        const char* emp = "¡PARTIDA EMPATADA EN VIDAS!";
+        mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(emp)) / 2, "%s", emp);
+        attroff(COLOR_PAIR(7) | A_BOLD);
+    }
+
+    // Estadísticas y puntajes finales actualizados
+    attron(COLOR_PAIR(7));
+    char p1Txt[64], p2Txt[64];
+    snprintf(p1Txt, sizeof(p1Txt), "Puntaje final J1 (Verde): %d pts", j.jugadores[0].cantidad);
+    snprintf(p2Txt, sizeof(p2Txt), "Puntaje final J2 (Cian):  %d pts", j.jugadores[1].cantidad);
+    mvprintw(marcoY + 11, marcoX + (marcoAncho - 32) / 2, "%s", p1Txt);
+    mvprintw(marcoY + 12, marcoX + (marcoAncho - 32) / 2, "%s", p2Txt);
+    attroff(COLOR_PAIR(7));
+
+    attron(COLOR_PAIR(7));
+    const char* insTxt = "Presiona cualquier tecla para volver al Menú Principal...";
+    mvprintw(marcoY + 15, marcoX + (marcoAncho - (int)strlen(insTxt)) / 2, "%s", insTxt);
+    attroff(COLOR_PAIR(7));
+
     refresh();
     getch();
     nodelay(stdscr, TRUE);
