@@ -1084,6 +1084,7 @@ bool jugadorMuerto(const Jugador& jugador) {
     return jugador.vidas <= 0;
 }
 
+
 void mostrarGameOverUnJugador(const Juego& j) {
     erase();
     int max_y, max_x;
@@ -1147,11 +1148,10 @@ void mostrarGanadorMultijugador(const Juego& j) {
     getmaxyx(stdscr, max_y, max_x);
     
     int marcoAncho = 70;
-    int marcoAlto  = 18;
+    int marcoAlto  = 16;
     int marcoX = (max_x - marcoAncho) / 2;
     int marcoY = (max_y - marcoAlto) / 2;
 
-    // Marco exterior en color Magenta para que resalte el color de los jugadores
     attron(COLOR_PAIR(5));
     mvaddwstr(marcoY, marcoX, L"╔");
     for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY, marcoX + i, L"═");
@@ -1165,52 +1165,73 @@ void mostrarGanadorMultijugador(const Juego& j) {
     mvaddwstr(marcoY + marcoAlto - 1, marcoX + marcoAncho - 1, L"╝");
     attroff(COLOR_PAIR(5));
 
-    attron(COLOR_PAIR(4) | A_BOLD);
-    string goArt1 = "▄████   ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄   ▄████▄ ▄▄ ▄▄ ▄▄▄▄▄ ▄▄▄▄  ";
-    string goArt2 = "██  ▄▄▄ ██▀██ ██▀▄▀██ ██▄▄     ██  ██ ██▄██ ██▄▄  ██▄█▄ ";
-    string goArt3 = " ▀███▀  ██▀██ ██   ██ ██▄▄▄    ▀████▀  ▀█▀  ██▄▄▄ ██ ██ ";
-    
-    mvprintw(marcoY + 2, (max_x - 54) / 2, "%s", goArt1.c_str());
-    mvprintw(marcoY + 3, (max_x - 54) / 2, "%s", goArt2.c_str());
-    mvprintw(marcoY + 4, (max_x - 54) / 2, "%s", goArt3.c_str());
-    attroff(COLOR_PAIR(4) | A_BOLD);
+    int p1_v = j.jugadores[0].vidas;
+    int p2_v = j.jugadores[1].vidas;
 
-    attron(COLOR_PAIR(7));
-    mvprintw(marcoY + 6, marcoX + 6, "──────────────────────────────────────────────────────────");
-    attroff(COLOR_PAIR(7));
-
-    // Lógica de Ganador con J2 configurado en color Cian
-    if (j.jugadores[0].vidas > j.jugadores[1].vidas) {
-        attron(COLOR_PAIR(3) | A_BOLD); // Verde
-        const char* win = "¡GANADOR JUGADOR 1 (VERDE)!";
-        mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(win)) / 2, "%s", win);
+    if (p1_v > p2_v) {
+        attron(COLOR_PAIR(3) | A_BOLD);
+        string winArt1 = "▄████  ▄████▄ ███  ██ ▄████▄ ████▄  ▄████▄ █████▄   ▄█ ";
+        string winArt2 = "██  ▄▄▄ ██▄▄██ ██ ▀▄██ ██▄▄██ ██  ██ ██  ██ ██▄▄██▄  ██ ";
+        string winArt3 = " ▀███▀  ██  ██ ██   ██ ██  ██ ████▀  ▀████▀ ██   ██ ▄██▄";
+        mvprintw(marcoY + 2, (max_x - 56) / 2, "%s", winArt1.c_str());
+        mvprintw(marcoY + 3, (max_x - 56) / 2, "%s", winArt2.c_str());
+        mvprintw(marcoY + 4, (max_x - 56) / 2, "%s", winArt3.c_str());
         attroff(COLOR_PAIR(3) | A_BOLD);
+
+        attron(COLOR_PAIR(4) | A_BOLD);
+        string govArt1 = "▄████   ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄   ▄████▄ ▄▄ ▄▄ ▄▄▄▄▄ ▄▄▄▄   ████▄ ";
+        string govArt2 = "██  ▄▄▄ ██▀██ ██▀▄▀██ ██▄▄     ██  ██ ██▄██ ██▄▄  ██▄█▄    ▄█▀ ";
+        string govArt3 = " ▀███▀  ██▀██ ██   ██ ██▄▄▄    ▀████▀  ▀█▀  ██▄▄▄ ██ ██  ▄████▄";
+        mvprintw(marcoY + 7, (max_x - 63) / 2, "%s", govArt1.c_str());
+        mvprintw(marcoY + 8, (max_x - 63) / 2, "%s", govArt2.c_str());
+        mvprintw(marcoY + 9, (max_x - 63) / 2, "%s", govArt3.c_str());
+        attroff(COLOR_PAIR(4) | A_BOLD);
     } 
-    else if (j.jugadores[1].vidas > j.jugadores[0].vidas) {
-        attron(COLOR_PAIR(6) | A_BOLD); // Cian
-        const char* win = "¡GANADOR JUGADOR 2 (CIAN)!";
-        mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(win)) / 2, "%s", win);
+    else if (p2_v > p1_v) {
+        attron(COLOR_PAIR(6) | A_BOLD);
+        string winArt1 = "▄████  ▄████▄ ███  ██ ▄████▄ ████▄  ▄████▄ █████▄  ▄███▄ ";
+        string winArt2 = "██  ▄▄▄ ██▄▄██ ██ ▀▄██ ██▄▄██ ██  ██ ██  ██ ██▄▄██▄   ▄█▀ ";
+        string winArt3 = " ▀███▀  ██  ██ ██   ██ ██  ██ ████▀  ▀████▀ ██   ██ ▄████▄";
+        mvprintw(marcoY + 2, (max_x - 57) / 2, "%s", winArt1.c_str());
+        mvprintw(marcoY + 3, (max_x - 57) / 2, "%s", winArt2.c_str());
+        mvprintw(marcoY + 4, (max_x - 57) / 2, "%s", winArt3.c_str());
         attroff(COLOR_PAIR(6) | A_BOLD);
+
+        attron(COLOR_PAIR(4) | A_BOLD);
+        string govArt1 = "▄████   ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄   ▄████▄ ▄▄ ▄▄ ▄▄▄▄▄ ▄▄▄▄   ▄█ ";
+        string govArt2 = "██  ▄▄▄ ██▀██ ██▀▄▀██ ██▄▄     ██  ██ ██▄██ ██▄▄  ██▄█▄  ██ ";
+        string govArt3 = " ▀███▀  ██▀██ ██   ██ ██▄▄▄    ▀████▀  ▀█▀  ██▄▄▄ ██ ██ ▄██▄";
+        mvprintw(marcoY + 7, (max_x - 60) / 2, "%s", govArt1.c_str());
+        mvprintw(marcoY + 8, (max_x - 60) / 2, "%s", govArt2.c_str());
+        mvprintw(marcoY + 9, (max_x - 60) / 2, "%s", govArt3.c_str());
+        attroff(COLOR_PAIR(4) | A_BOLD);
     } 
     else {
-        attron(COLOR_PAIR(7) | A_BOLD); // Blanco / Empate
-        const char* emp = "¡PARTIDA EMPATADA EN VIDAS!";
-        mvprintw(marcoY + 8, marcoX + (marcoAncho - (int)strlen(emp)) / 2, "%s", emp);
+        // EMPATE
+        attron(COLOR_PAIR(7) | A_BOLD);
+        string empArt1 = "███████╗███╗   ███╗██████╗  █████╗ ████████╗███████╗";
+        string empArt2 = "█████╗  ██╔████╔██║██████╔╝███████║   ██║   █████╗  ";
+        string empArt3 = "╚══════╝╚═╝     ╚═╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚══════╝";
+        mvprintw(marcoY + 3, (max_x - 52) / 2, "%s", empArt1.c_str());
+        mvprintw(marcoY + 4, (max_x - 52) / 2, "%s", empArt2.c_str());
+        mvprintw(marcoY + 5, (max_x - 52) / 2, "%s", empArt3.c_str());
+        
+        const char* empTxt = "¡AMBOS JUGADORES EMPATARON EN VIDAS!";
+        mvprintw(marcoY + 8, (max_x - (int)strlen(empTxt)) / 2, "%s", empTxt);
         attroff(COLOR_PAIR(7) | A_BOLD);
     }
 
-    // Estadísticas y puntajes finales actualizados
     attron(COLOR_PAIR(7));
+    mvprintw(marcoY + 11, marcoX + 6, "──────────────────────────────────────────────────────────");
+    
     char p1Txt[64], p2Txt[64];
-    snprintf(p1Txt, sizeof(p1Txt), "Puntaje final J1 (Verde): %d pts", j.jugadores[0].cantidad);
-    snprintf(p2Txt, sizeof(p2Txt), "Puntaje final J2 (Cian):  %d pts", j.jugadores[1].cantidad);
-    mvprintw(marcoY + 11, marcoX + (marcoAncho - 32) / 2, "%s", p1Txt);
-    mvprintw(marcoY + 12, marcoX + (marcoAncho - 32) / 2, "%s", p2Txt);
-    attroff(COLOR_PAIR(7));
+    snprintf(p1Txt, sizeof(p1Txt), "J1 (Verde): %d pts", j.jugadores[0].cantidad);
+    snprintf(p2Txt, sizeof(p2Txt), "J2 (Cian):  %d pts", j.jugadores[1].cantidad);
+    mvprintw(marcoY + 12, marcoX + 6, "%s", p1Txt);
+    mvprintw(marcoY + 12, marcoX + marcoAncho - (int)strlen(p2Txt) - 6, "%s", p2Txt);
 
-    attron(COLOR_PAIR(7));
     const char* insTxt = "Presiona cualquier tecla para volver al Menú Principal...";
-    mvprintw(marcoY + 15, marcoX + (marcoAncho - (int)strlen(insTxt)) / 2, "%s", insTxt);
+    mvprintw(marcoY + 14, (max_x - (int)strlen(insTxt)) / 2, "%s", insTxt);
     attroff(COLOR_PAIR(7));
 
     refresh();
@@ -1218,9 +1239,6 @@ void mostrarGanadorMultijugador(const Juego& j) {
     nodelay(stdscr, TRUE);
 }
 
-
-// Menu para seleccionar nivel desde el menu principal
-// Muestra TODOS los niveles desbloqueados
 int mostrarMenuSeleccionarNivel(const Juego& j) {
     int seleccion = 0;
 
@@ -1229,29 +1247,95 @@ int mostrarMenuSeleccionarNivel(const Juego& j) {
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
 
-        mvprintw(max_y/2 - 8, max_x/2 - 15, "SELECCIONAR NIVEL");
-        mvprintw(max_y/2 - 4, max_x/2 - 20,
-                 "Nivel maximo desbloqueado: %d",
-                 j.nivelMaximoDesbloqueado);
-        mvprintw(max_y/2 - 1, max_x/2 - 23,
-                 "Usa flechas y Enter ('Y' para salir)");
-        mvprintw(max_y/2, max_x/2 - 15,
-                 "Selecciona un nivel:");
+        int marcoAncho = 74;
+        int marcoAlto  = 25;
+        int marcoX = (max_x - marcoAncho) / 2;
+        int marcoY = (max_y - marcoAlto) / 2;
 
+        attron(COLOR_PAIR(6));
+        mvaddwstr(marcoY, marcoX, L"╔");
+        for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY, marcoX + i, L"═");
+        mvaddwstr(marcoY, marcoX + marcoAncho - 1, L"╗");
+        for(int i = 1; i < marcoAlto - 1; i++) {
+            mvaddwstr(marcoY + i, marcoX, L"║");
+            mvaddwstr(marcoY + i, marcoX + marcoAncho - 1, L"║");
+        }
+        mvaddwstr(marcoY + marcoAlto - 1, marcoX, L"╚");
+        for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY + marcoAlto - 1, marcoX + i, L"═");
+        mvaddwstr(marcoY + marcoAlto - 1, marcoX + marcoAncho - 1, L"╝");
+        attroff(COLOR_PAIR(6));
+
+        attron(COLOR_PAIR(6) | A_BOLD);
+        string nivArt1 = "███╗   ██╗██╗██╗   ██╗███████╗██╗     ███████╗███████╗";
+        string nivArt2 = "████╗  ██║██║██║   ██║██╔════╝██║     ██╔════╝██╔════╝";
+        string nivArt3 = "██╔██╗ ██║██║██║   ██║█████╗  ██║     █████╗  ███████╗";
+        string nivArt4 = "██║╚██╗██║██║╚██╗ ██╔╝██╔══╝  ██║     ██╔══╝  ╚════██║";
+        string nivArt5 = "██║ ╚████║██║ ╚████╔╝ ███████╗███████╗███████╗███████║";
+        string nivArt6 = "╚═╝  ╚═══╝╚═╝  ╚═══╝  ╚══════╝╚══════╝╚══════╝╚══════╝";
+        
+        mvprintw(marcoY + 2, marcoX + (marcoAncho - 54) / 2, "%s", nivArt1.c_str());
+        mvprintw(marcoY + 3, marcoX + (marcoAncho - 54) / 2, "%s", nivArt2.c_str());
+        mvprintw(marcoY + 4, marcoX + (marcoAncho - 54) / 2, "%s", nivArt3.c_str());
+        mvprintw(marcoY + 5, marcoX + (marcoAncho - 54) / 2, "%s", nivArt4.c_str());
+        mvprintw(marcoY + 6, marcoX + (marcoAncho - 54) / 2, "%s", nivArt5.c_str());
+        mvprintw(marcoY + 7, marcoX + (marcoAncho - 54) / 2, "%s", nivArt6.c_str());
+        attroff(COLOR_PAIR(6) | A_BOLD);
+
+        // Separador interno
+        attron(COLOR_PAIR(7));
+        mvprintw(marcoY + 9, marcoX + 6, "──────────────────────────────────────────────────────────────");
+        attroff(COLOR_PAIR(7));
+
+        // Información de progreso (Amarillo)
+        attron(COLOR_PAIR(2) | A_BOLD);
+        char progTxt[64];
+        snprintf(progTxt, sizeof(progTxt), "Nivel máximo desbloqueado: %d", j.nivelMaximoDesbloqueado);
+        mvprintw(marcoY + 11, marcoX + (marcoAncho - (int)strlen(progTxt)) / 2, "%s", progTxt);
+        attroff(COLOR_PAIR(2) | A_BOLD);
+
+        // Desplegar las 5 opciones de nivel
+        int startY = marcoY + 13;
         for (int i = 0; i < 5; i++) {
             bool desbloqueado = (i < j.nivelMaximoDesbloqueado);
+            char nivelTxt[64];
 
-            if (i == seleccion) attron(A_REVERSE);
-            if (!desbloqueado) attron(A_DIM);
+            if (desbloqueado) {
+                snprintf(nivelTxt, sizeof(nivelTxt), " Nivel %d ", i + 1);
+            } else {
+                snprintf(nivelTxt, sizeof(nivelTxt), " Nivel %d (BLOQUEADO) ", i + 1);
+            }
 
-            if (desbloqueado)
-                mvprintw(max_y/2 + 4 + i, max_x/2 - 15, "Nivel %d", i + 1);
-            else
-                mvprintw(max_y/2 + 4 + i, max_x/2 - 15, "Nivel %d (BLOQUEADO)", i + 1);
+            int x = marcoX + (marcoAncho - (int)strlen(nivelTxt)) / 2;
 
-            if (!desbloqueado) attroff(A_DIM);
-            if (i == seleccion) attroff(A_REVERSE);
+            if (i == seleccion) {
+                if (desbloqueado) {
+                    attron(COLOR_PAIR(7) | A_REVERSE | A_BOLD); // Blanco resaltado e invertido para el nivel seleccionado
+                } else {
+                    attron(COLOR_PAIR(4) | A_REVERSE | A_BOLD); // Rojo resaltado e invertido para bloqueados
+                }
+                mvprintw(startY + (i * 2), x, "%s", nivelTxt);
+                
+                if (desbloqueado) attroff(COLOR_PAIR(7) | A_REVERSE | A_BOLD);
+                else attroff(COLOR_PAIR(4) | A_REVERSE | A_BOLD);
+            } else {
+                if (desbloqueado) {
+                    attron(COLOR_PAIR(7) | A_BOLD); // Blanco normal para disponibles no seleccionados
+                    mvprintw(startY + (i * 2), x, "%s", nivelTxt);
+                    attroff(COLOR_PAIR(7) | A_BOLD);
+                } else {
+                    attron(COLOR_PAIR(4)); // Rojo normal para bloqueados no seleccionados
+                    mvprintw(startY + (i * 2), x, "%s", nivelTxt);
+                    attroff(COLOR_PAIR(4));
+                }
+            }
         }
+
+        // Instrucciones inferiores de navegación
+        attron(COLOR_PAIR(7));
+        mvprintw(marcoY + 22, marcoX + 6, "──────────────────────────────────────────────────────────────");
+        const char* insTxt = "Usa ▲ y ▼ para navegar | Enter: Elegir | 'Y': Volver al Menú";
+        mvprintw(marcoY + 23, marcoX + (marcoAncho - (int)strlen(insTxt)) / 2, "%s", insTxt);
+        attroff(COLOR_PAIR(7));
 
         refresh();
 
@@ -1262,26 +1346,73 @@ int mostrarMenuSeleccionarNivel(const Juego& j) {
         } else if (input == KEY_DOWN && seleccion < 4) {
             seleccion++;
         } else if (input == 10) {
-            if (seleccion < j.nivelMaximoDesbloqueado)
+            if (seleccion < j.nivelMaximoDesbloqueado) {
                 return seleccion + 1;
-            beep();
+            } else {
+                beep();
+            }
         } else if (input == 'y' || input == 'Y') {
             flushinp();
             return -1;
         }
     }
 }
-// Pantalla cuando gana un nivel// Pantalla cuando gana un nivel
+
 // Muestra todos los niveles desbloqueados disponibles para jugar
 int mostrarVictoriaUnJugador(Juego& j) {
     erase();
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
     
-    mvprintw(max_y/2 - 7, max_x/2 - 8, "GANASTE");
-    mvprintw(max_y/2 - 5, max_x/2 - 15, "Puntaje acumulado: %d", j.puntaje);
-    mvprintw(max_y/2 - 3, max_x/2 - 19, "Tiempo restante: %d segundos", j.tiempoRestante);
-    mvprintw(max_y/2 - 1, max_x/2 - 27, "Presiona cualquier tecla para seleccionar nivel...");
+    int marcoAncho = 74;
+    int marcoAlto  = 16;
+    int marcoX = (max_x - marcoAncho) / 2;
+    int marcoY = (max_y - marcoAlto) / 2;
+
+    attron(COLOR_PAIR(2));
+    mvaddwstr(marcoY, marcoX, L"╔");
+    for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY, marcoX + i, L"═");
+    mvaddwstr(marcoY, marcoX + marcoAncho - 1, L"╗");
+    for(int i = 1; i < marcoAlto - 1; i++) {
+        mvaddwstr(marcoY + i, marcoX, L"║");
+        mvaddwstr(marcoY + i, marcoX + marcoAncho - 1, L"║");
+    }
+    mvaddwstr(marcoY + marcoAlto - 1, marcoX, L"╚");
+    for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY + marcoAlto - 1, marcoX + i, L"═");
+    mvaddwstr(marcoY + marcoAlto - 1, marcoX + marcoAncho - 1, L"╝");
+    attroff(COLOR_PAIR(2));
+
+    attron(COLOR_PAIR(3) | A_BOLD);
+    string vicArt1 = "██  ██ ██ ▄█████ ██████ ▄████▄ █████▄  ██ ▄████▄ ";
+    string vicArt2 = "██▄▄██ ██ ██       ██   ██  ██ ██▄▄██▄ ██ ██▄▄██ ";
+    string vicArt3 = " ▀██▀  ██ ▀█████   ██   ▀████▀ ██   ██ ██ ██  ██ ";
+    
+    mvprintw(marcoY + 3, (max_x - 49) / 2, "%s", vicArt1.c_str());
+    mvprintw(marcoY + 4, (max_x - 49) / 2, "%s", vicArt2.c_str());
+    mvprintw(marcoY + 5, (max_x - 49) / 2, "%s", vicArt3.c_str());
+    attroff(COLOR_PAIR(3) | A_BOLD);
+
+    attron(COLOR_PAIR(7));
+    mvprintw(marcoY + 7, marcoX + 6, "────────────────────────────────────────────────────────────");
+    attroff(COLOR_PAIR(7));
+
+    attron(COLOR_PAIR(2) | A_BOLD);
+    char puntajeTxt[64];
+    snprintf(puntajeTxt, sizeof(puntajeTxt), "Puntaje Acumulado: %d pts", j.puntaje);
+    mvprintw(marcoY + 9, (max_x - (int)strlen(puntajeTxt)) / 2, "%s", puntajeTxt);
+    attroff(COLOR_PAIR(2) | A_BOLD);
+
+    attron(COLOR_PAIR(6));
+    char tiempoTxt[64];
+    snprintf(tiempoTxt, sizeof(tiempoTxt), "Tiempo restante: %d segundos", j.tiempoRestante);
+    mvprintw(marcoY + 10, (max_x - (int)strlen(tiempoTxt)) / 2, "%s", tiempoTxt);
+    attroff(COLOR_PAIR(6));
+
+    attron(COLOR_PAIR(7));
+    const char* insTxt = "Presiona cualquier tecla para seleccionar tu siguiente nivel...";
+    mvprintw(marcoY + 13, (max_x - (int)strlen(insTxt)) / 2, "%s", insTxt);
+    attroff(COLOR_PAIR(7));
+
     refresh();
     getch();
     nodelay(stdscr, FALSE);
