@@ -216,30 +216,147 @@ void colocarPowerups(Juego &j) {
     }
 }
 
-// Dibuja la interfaz de usuario (HUD)
-void interfaz_un_jugador (const Juego &j, bool modoUnJugador) {
-    int uiy = j.mapa.alto + 1;
-    if (modoUnJugador) {
-        mvprintw(uiy, 0, "Nivel: %d | Puntaje: %d | Vidas: %d | Tiempo: %d seg | (E) bomba (Y) salir", 
-            j.nivel, j.puntaje, j.jugadores[0].vidas, j.tiempoRestante);
-        if (j.puerta.abierta) {
-            mvprintw(uiy + 1, 0, "Puerta ABIERTA - Ve hasta la puerta para pasar de nivel");
+// Dibuja un panel para la informacion del jugador
+void dibujarRanking(int inicioY);
+
+// Prototipo
+int obtenerOffsetMapa(const Juego& j);
+
+// Se mantiene para compatibilidad
+void interfaz_un_jugador(const Juego &j, bool modoUnJugador) {
+}
+
+void dibujarPanelHUD(const Juego& j, bool modoUnJugador) {
+
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    int panelY = j.mapa.alto + 2;
+
+    int panelAncho = 110;
+    int panelAlto  = 5;
+
+    int panelX = (max_x - panelAncho) / 2;
+
+    attron(COLOR_PAIR(6));
+
+    mvaddwstr(panelY, panelX, L"╔");
+
+    for(int i = 1; i < panelAncho - 1; i++)
+        mvaddwstr(panelY, panelX + i, L"═");
+
+    mvaddwstr(panelY, panelX + panelAncho - 1, L"╗");
+
+    for(int i = 1; i < panelAlto - 1; i++) {
+
+        mvaddwstr(panelY + i, panelX, L"║");
+
+        for(int j = 1; j < panelAncho - 1; j++)
+            mvaddch(panelY + i, panelX + j, ' ');
+
+        mvaddwstr(panelY + i, panelX + panelAncho - 1, L"║");
+    }
+
+    mvaddwstr(panelY + panelAlto - 1, panelX, L"╚");
+
+    for(int i = 1; i < panelAncho - 1; i++)
+        mvaddwstr(panelY + panelAlto - 1, panelX + i, L"═");
+
+    mvaddwstr(panelY + panelAlto - 1,
+              panelX + panelAncho - 1,
+              L"╝");
+
+    attroff(COLOR_PAIR(6));
+
+if(modoUnJugador) {
+        
+        // Separadores estructurales '|' posicionados simétricamente
+        attron(COLOR_PAIR(7));
+        mvprintw(panelY + 1, panelX + 14, "|");
+        mvprintw(panelY + 1, panelX + 33, "|");
+        mvprintw(panelY + 1, panelX + 47, "|");
+        mvprintw(panelY + 1, panelX + 67, "|");
+        attroff(COLOR_PAIR(7));
+
+        // Nivel (Cian) - Columna 1
+        attron(COLOR_PAIR(6) | A_BOLD);
+        mvprintw(panelY + 1, panelX + 4, "Nivel: %d", j.nivel);
+        attroff(COLOR_PAIR(6) | A_BOLD);
+
+        // Puntaje (Amarillo) - Columna 2
+        attron(COLOR_PAIR(2) | A_BOLD);
+        mvprintw(panelY + 1, panelX + 17, "Puntaje: %d", j.puntaje);
+        attroff(COLOR_PAIR(2) | A_BOLD);
+
+        // Vidas (Verde) - Columna 3
+        attron(COLOR_PAIR(3) | A_BOLD);
+        mvprintw(panelY + 1, panelX + 36, "Vidas: %d", j.jugadores[0].vidas);
+        attroff(COLOR_PAIR(3) | A_BOLD);
+
+        // Tiempo (Magenta) - Columna 4
+        attron(COLOR_PAIR(5) | A_BOLD);
+        mvprintw(panelY + 1, panelX + 50, "Tiempo: %d seg", j.tiempoRestante);
+        attroff(COLOR_PAIR(5) | A_BOLD);
+
+        // Acciones (Blanco) - Columna 5
+        attron(COLOR_PAIR(7));
+        mvprintw(panelY + 1, panelX + 70, "(E) bomba  (Y) salir");
+        attroff(COLOR_PAIR(7));
+
+        char linea2[128];
+        if(j.puerta.abierta) {
+            snprintf(linea2, sizeof(linea2), "Puerta ABIERTA - Ve hasta la puerta para pasar de nivel");
+            int x2 = panelX + (panelAncho - (int)strlen(linea2)) / 2;
+            attron(COLOR_PAIR(3) | A_BOLD);
+            mvprintw(panelY + 2, x2, "%s", linea2);
+            attroff(COLOR_PAIR(3) | A_BOLD);
         } else {
-            mvprintw(uiy + 1, 0, "Puerta CERRADA - Destruye todos los enemigos ♣, luego mata al ♠ para abrir puerta");
+            snprintf(linea2, sizeof(linea2), "Puerta CERRADA - Destruye todos los enemigos, luego mata al jefe para abrir puerta");
+            int x2 = panelX + (panelAncho - (int)strlen(linea2)) / 2;
+            attron(COLOR_PAIR(6) | A_BOLD); 
+            mvprintw(panelY + 2, x2, "%s", linea2);
+            attroff(COLOR_PAIR(6) | A_BOLD);
         }
-        mvprintw(uiy + 2, 0, "Usa (WASD) para moverte y (E) para colocar bomba");
-    } else {
-        // HUD multijugador
-        mvprintw(uiy, 0, "J1 Vidas: %d  Puntaje: %d     J2 Vidas: %d  Puntaje: %d", 
-            j.jugadores[0].vidas, j.jugadores[0].cantidad, 
-            j.jugadores[1].vidas, j.jugadores[1].cantidad);
-        mvprintw(uiy + 1, 0, "(WASD) movimiento J1 | (E) bomba J1 | (JIKL) movimiento J2 | (O) bomba J2 | (Y) salir");
+
+        const char* linea3 = "Usa (WASD) para moverte y (E) para colocar bomba";
+        int x3 = panelX + (panelAncho - (int)strlen(linea3)) / 2;
+        attron(COLOR_PAIR(7));
+        mvprintw(panelY + 3, x3, "%s", linea3);
+        attroff(COLOR_PAIR(7));
+    }
+    else {
+
+        // Línea 1: Estadísticas de Jugador 1 (Verde)
+        char lp1[128];
+        snprintf(lp1, sizeof(lp1), "JUGADOR 1 (Verde)    |   Vidas: %d   |   Controles: [WASD] + [E] Bomba", j.jugadores[0].vidas);
+        int xp1 = panelX + (panelAncho - (int)strlen(lp1)) / 2;
+        attron(COLOR_PAIR(3) | A_BOLD);
+        mvprintw(panelY + 1, xp1, "%s", lp1);
+        attroff(COLOR_PAIR(3) | A_BOLD);
+
+        // Línea 2: Estadísticas de Jugador 2 (Amarillo)
+        char lp2[128];
+        snprintf(lp2, sizeof(lp2), "JUGADOR 2 (Amarillo) |   Vidas: %d   |   Controles: [J,I,K,L] + [o] Bomba", j.jugadores[1].vidas);
+        int xp2 = panelX + (panelAncho - (int)strlen(lp2)) / 2;
+        attron(COLOR_PAIR(2) | A_BOLD);
+        mvprintw(panelY + 2, xp2, "%s", lp2);
+        attroff(COLOR_PAIR(2) | A_BOLD);
+
+        // Línea 3: Opción de salida global (Blanco)
+        const char* lsalir = "Presiona (Y) en cualquier momento para salir al Menú Principal";
+        int xsalir = panelX + (panelAncho - (int)strlen(lsalir)) / 2;
+        attron(COLOR_PAIR(7));
+        mvprintw(panelY + 3, xsalir, "%s", lsalir);
+        attroff(COLOR_PAIR(7));
     }
 }
+
 
 // Dibuja el mapa completo en pantalla
 void dibujarMapa(const Juego &j, bool modoUnJugador) {
     erase();
+
+    int offsetX = obtenerOffsetMapa(j);
 
     bool parpadeo = (duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() / 250) % 2;
     
@@ -252,89 +369,89 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
                 case '=':
                     attron(COLOR_PAIR(1));
                     if (y == 0 && x == 0) {
-                        mvaddwstr(y, x, L"╔"); // esquina superior izquierda
+                        mvaddwstr(y, x + offsetX, L"╔"); // esquina superior izquierda
                     } else if (y == 0 && x == j.mapa.largo - 1) {
-                        mvaddwstr(y, x, L"╗"); // esquina superior derecha
+                        mvaddwstr(y, x + offsetX, L"╗"); // esquina superior derecha
                     } else if (y == j.mapa.alto - 1 && x == 0) {
-                        mvaddwstr(y, x, L"╚"); // esquina inferior izquierda
+                        mvaddwstr(y, x + offsetX, L"╚"); // esquina inferior izquierda
                     } else if (y == j.mapa.alto - 1 && x == j.mapa.largo - 1) {
-                        mvaddwstr(y, x, L"╝"); // esquina inferior derecha
+                        mvaddwstr(y, x + offsetX, L"╝"); // esquina inferior derecha
                     } else if (y == 0 || y == j.mapa.alto - 1) {
-                        mvaddwstr(y, x, L"═"); // bordes horizontales
+                        mvaddwstr(y, x + offsetX, L"═"); // bordes horizontales
                     } else if (x == 0 || x == j.mapa.largo - 1) {
-                        mvaddwstr(y, x, L"║"); // bordes verticales
+                        mvaddwstr(y, x + offsetX, L"║"); // bordes verticales
                     } else {
-                        mvaddwstr(y, x, L"="); // interior
+                        mvaddwstr(y, x + offsetX, L"="); // interior
                     }
                     attroff(COLOR_PAIR(1));
                     break;
 
                 case '#':
                     attron(COLOR_PAIR(2));
-                    mvaddwstr(y, x, L"#");   // muro rompible
+                    mvaddwstr(y, x + offsetX, L"#");   // muro rompible
                     attroff(COLOR_PAIR(2));
                     break;
 
                 case '@':
                     attron(COLOR_PAIR(3) | A_BOLD);
-                    mvaddwstr(y, x, L"●");   // jugador 1
+                    mvaddwstr(y, x + offsetX, L"●");   // jugador 1
                     attroff(COLOR_PAIR(3) | A_BOLD);
                     break;
                 case '&':
                     attron(COLOR_PAIR(3) | A_BOLD);
-                    mvaddwstr(y, x, L"⚬");   // jugador 2
+                    mvaddwstr(y, x + offsetX, L"⚬");   // jugador 2
                     attroff(COLOR_PAIR(3) | A_BOLD);
                     break;
                 case 'O':
                     if (parpadeo) { // bomba parpadeando
                         attron(COLOR_PAIR(11) | A_BOLD);
-                        mvaddwstr(y, x, L"¤"); 
+                        mvaddwstr(y, x + offsetX, L"¤"); 
                         attroff(COLOR_PAIR(11) | A_BOLD);
                     } else {
                         attron(COLOR_PAIR(7) | A_BOLD);
-                        mvaddwstr(y, x, L"¤");
+                        mvaddwstr(y, x + offsetX, L"¤");
                         attroff(COLOR_PAIR(7) | A_BOLD);
                     }
                     break;
 
                 case '*':
                     attron(COLOR_PAIR(8) | A_BOLD);
-                    mvaddwstr(y, x, L"✦");   // explosión
+                    mvaddwstr(y, x + offsetX, L"✦");   // explosión
                     attroff(COLOR_PAIR(8) | A_BOLD);
                     break;
 
                 case 'E':
                     attron(COLOR_PAIR(4) | A_BOLD);
-                    mvaddwstr(y, x, L"♣");   // enemigo
+                    mvaddwstr(y, x + offsetX, L"♣");   // enemigo
                     attroff(COLOR_PAIR(4) | A_BOLD);
                     break;
 
                 case 'K':
                     attron(COLOR_PAIR(5) | A_BOLD);
-                    mvaddwstr(y, x, L"♠");   // jefe
+                    mvaddwstr(y, x + offsetX, L"♠");   // jefe
                     attroff(COLOR_PAIR(5) | A_BOLD);
                     break;
 
                 case '>':
                     attron(COLOR_PAIR(6) | A_BOLD);
-                    mvaddwstr(y, x, L"▣");   // puerta abierta
+                    mvaddwstr(y, x + offsetX, L"▣");   // puerta abierta
                     attroff(COLOR_PAIR(6) | A_BOLD);
                     break;
 
                 case 'X':
                     attron(COLOR_PAIR(6) | A_BOLD);
-                    mvaddwstr(y, x, L"□");   // puerta cerrada
+                    mvaddwstr(y, x + offsetX, L"□");   // puerta cerrada
                     attroff(COLOR_PAIR(6) | A_BOLD);
                     break;
 
                 case '$':
                     if (parpadeo) { // power up bomba  parpadeando
                         attron(COLOR_PAIR(10) | A_BOLD);
-                        mvaddwstr(y, x, L"♦");
+                        mvaddwstr(y, x + offsetX, L"♦");
                         attroff(COLOR_PAIR(10) | A_BOLD);
                     } else {
                         attron(COLOR_PAIR(7) | A_BOLD);
-                        mvaddwstr(y, x, L"♦");
+                        mvaddwstr(y, x + offsetX, L"♦");
                         attroff(COLOR_PAIR(7) | A_BOLD);
                     }
                     break;
@@ -342,16 +459,16 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
                 case '+':
                     if (parpadeo) { // vida parpadeando
                         attron(COLOR_PAIR(9) | A_BOLD);
-                        mvaddwstr(y, x, L"♥");
+                        mvaddwstr(y, x + offsetX, L"♥");
                         attroff(COLOR_PAIR(9) | A_BOLD);
                     } else {
                         attron(COLOR_PAIR(7) | A_BOLD);
-                        mvaddwstr(y, x, L"♥");
+                        mvaddwstr(y, x + offsetX, L"♥");
                         attroff(COLOR_PAIR(7) | A_BOLD);
                     }
                     break;
                 default:
-                    mvaddch(y, x, c);
+                    mvaddch(y, x + offsetX, c);
             }
         }
     }
@@ -361,22 +478,26 @@ void dibujarMapa(const Juego &j, bool modoUnJugador) {
         if (j.puerta.abierta) {
             if (parpadeo) { // puerta abierta parpadeando
                 attron(COLOR_PAIR(6) | A_BOLD);
-                mvaddwstr(j.puerta.y, j.puerta.x, L"▣");
+                mvaddwstr(j.puerta.y, j.puerta.x + offsetX, L"▣");
                 attroff(COLOR_PAIR(6) | A_BOLD);
             } else {
                 attron(COLOR_PAIR(7) | A_BOLD);
-                mvaddwstr(j.puerta.y, j.puerta.x, L"▣");
+                mvaddwstr(j.puerta.y, j.puerta.x + offsetX, L"▣");
                 attroff(COLOR_PAIR(7) | A_BOLD);
             }
         }
         else {
             attron(COLOR_PAIR(6) | A_BOLD);
-            mvaddwstr(j.puerta.y, j.puerta.x, L"□");
+            mvaddwstr(j.puerta.y, j.puerta.x + offsetX, L"□");
             attroff(COLOR_PAIR(6) | A_BOLD);
         }
     }
 
-    interfaz_un_jugador(j, modoUnJugador);
+    dibujarPanelHUD(j, modoUnJugador);
+
+    if(modoUnJugador)
+        dibujarRanking(j.mapa.alto + 9);
+
     refresh();
 };
 
@@ -916,6 +1037,8 @@ void* hiloCronometro(void* arg) {
     DataJuego* datos = (DataJuego*) arg;
     
     while (*(datos->juegoActivo) && datos->juego->tiempoRestante > 0) {
+
+
         sleep(1);
         
         pthread_mutex_lock(&mutex);
@@ -1202,6 +1325,7 @@ void mostrarPuntajes() {
         }
     }
 
+
     // Coordenadas centradas
     int tableW = 19 + 3 + 18 + 3 + 8; // FECHA + " | " + NOMBRE + " | " + PUNTAJE
     int x0 = (max_x - tableW) / 2;
@@ -1244,6 +1368,60 @@ void mostrarPuntajes() {
     getch();
     nodelay(stdscr, TRUE);
 }
+
+void dibujarRanking(int inicioY) {
+
+    ifstream in(PUNTAJES_1P_FILE);
+
+    string line;
+    vector<Puntajes> ranking;
+
+    if (!in.good()) return;
+
+    getline(in, line); // header
+
+    while (getline(in, line)) {
+
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+
+        string fecha, nombre, puntajeStr;
+
+        getline(ss, fecha, ',');
+        getline(ss, nombre, ',');
+        getline(ss, puntajeStr, ',');
+
+        Puntajes p;
+        p.fecha = fecha;
+        p.nombre = nombre;
+        p.puntaje = stoi(puntajeStr);
+
+        ranking.push_back(p);
+    }
+
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    int xRank = max_x / 2 - 15;
+
+    attron(COLOR_PAIR(6) | A_BOLD);
+    mvprintw(inicioY, xRank, "TOP 5 PUNTAJES");
+    attroff(COLOR_PAIR(6) | A_BOLD);
+
+    for (int i = 0; i < ranking.size() && i < 5; i++) {
+
+        mvprintw(
+            inicioY + 1 + i,
+            xRank,
+            "%d. %-15s %6d",
+            i + 1,
+            ranking[i].nombre.c_str(),
+            ranking[i].puntaje
+        );
+    }
+}
+
 void inicializarJugadores(Juego &j, bool modoUnJugador) {
     // Si ya existen nombres, solo resetear stats/posiciones
     if (modoUnJugador) {
@@ -1283,6 +1461,20 @@ void inicializarJugadores(Juego &j, bool modoUnJugador) {
 int xCentrado(int max_x, int len) {
     int x = (max_x - len) / 2;
     return (x < 0) ? 0 : x;
+}
+
+// Calcula el desplazamiento horizontal para centrar el mapa
+int obtenerOffsetMapa(const Juego& j) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    int offsetX = (max_x - j.mapa.largo) / 2;
+
+    if (offsetX < 0) {
+        offsetX = 0;
+    }
+
+    return offsetX;
 }
 
 void imprimirCentrado(int y, const string& s) {
@@ -1343,7 +1535,7 @@ int main() {
     bomberman.puntaje = 0;
     bomberman.nivel = 1;
     bomberman.nivelMaximoDesbloqueado = 1;
-    bomberman.tiempoRestante = 180;
+    bomberman.tiempoRestante = 10;
     bomberman.enModoMultijugador = false;
     bomberman.juegoActivo = false; 
     
@@ -1368,31 +1560,77 @@ int main() {
     nodelay(stdscr, FALSE);
 
     while(menu){
-    erase();
+        flushinp();
+        nodelay(stdscr, FALSE);
+        keypad(stdscr, TRUE);
 
-    int max_y, max_x;
-    getmaxyx(stdscr, max_y, max_x);
+        erase();
 
+        int max_y, max_x;
+        getmaxyx(stdscr, max_y, max_x);
 
-    imprimirBloqueCentrado(1, titulo);
+        int marcoAncho = 104; 
+        int marcoAlto  = 25;  
+        int marcoX = (max_x - marcoAncho) / 2;
+        int marcoY = 1; 
 
-    int startY = 13;
+        // Dibujar borde superior (Color Cian)
+        attron(COLOR_PAIR(6));
+        mvaddwstr(marcoY, marcoX, L"╔");
+        for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY, marcoX + i, L"═");
+        mvaddwstr(marcoY, marcoX + marcoAncho - 1, L"╗");
 
+        // Dibujar bordes laterales
+        for(int i = 1; i < marcoAlto - 1; i++) {
+            mvaddwstr(marcoY + i, marcoX, L"║");
+            mvaddwstr(marcoY + i, marcoX + marcoAncho - 1, L"║");
+        }
 
-    for (int idx = 0; idx < (int)opciones.size(); idx++) {
-        int y = startY + idx;
-        int x = xCentrado(max_x, (int)opciones[idx].size());
+        // Dibujar borde inferior
+        mvaddwstr(marcoY + marcoAlto - 1, marcoX, L"╚");
+        for(int i = 1; i < marcoAncho - 1; i++) mvaddwstr(marcoY + marcoAlto - 1, marcoX + i, L"═");
+        mvaddwstr(marcoY + marcoAlto - 1, marcoX + marcoAncho - 1, L"╝");
+        attroff(COLOR_PAIR(6));
 
-        if (idx == seleccion) attron(A_REVERSE);
-        mvprintw(y, x, "%s", opciones[idx].c_str());
-        if (idx == seleccion) attroff(A_REVERSE);
-    }
+        // 2. LOGO ASCII CON COLORES (Rojo Brillante y Negrita)
+        attron(COLOR_PAIR(4) | A_BOLD);
+        imprimirBloqueCentrado(marcoY + 2, titulo);
+        attroff(COLOR_PAIR(4) | A_BOLD);
 
+        // Línea decorativa interna extendida (Color Amarillo)
+        attron(COLOR_PAIR(2));
+        int decoracionX = marcoX + 4;
+        mvaddwstr(marcoY + 10, decoracionX, L"╠");
+        for(int i = 1; i < marcoAncho - 9; i++) mvaddwstr(marcoY + 10, decoracionX + i, L"═");
+        mvaddwstr(marcoY + 10, marcoX + marcoAncho - 5, L"╣");
+        attroff(COLOR_PAIR(2));
 
-    imprimirCentrado(startY + (int)opciones.size() + 2,
-                    "Usa ▲ y ▼ para navegar y Enter para seleccionar");
+        // 3. RENDERIZADO DE OPCIONES CON SELECCIONADOR EN BLANCO ESTÁNDAR
+        int startY = marcoY + 13;
 
-    refresh();
+        for (int idx = 0; idx < (int)opciones.size(); idx++) {
+            int y = startY + idx;
+            int x = xCentrado(max_x, (int)opciones[idx].size());
+
+            if (idx == seleccion) {
+                // Seleccionador original en blanco (solo A_REVERSE sin color verde)
+                attron(A_REVERSE);
+                mvprintw(y, x, "%s", opciones[idx].c_str());
+                attroff(A_REVERSE);
+            } else {
+                // Opciones normales en blanco 
+                attron(COLOR_PAIR(7));
+                mvprintw(y, x, "%s", opciones[idx].c_str());
+                attroff(COLOR_PAIR(7));
+            }
+        }
+
+        // 4. INSTRUCCIONES DE NAVEGACIÓN (Color Magenta)
+        attron(COLOR_PAIR(5));
+        imprimirCentrado(marcoY + marcoAlto - 3, "Usa ▲ y ▼ para navegar y Enter para seleccionar");
+        attroff(COLOR_PAIR(5));
+
+        refresh();
     
 
     input = getch();
@@ -1408,8 +1646,17 @@ int main() {
         
 
         if (opciones[seleccion] == "Un jugador") {
+
+            bomberman.juegoActivo = false;
+            usleep(500000); // Esperar medio segundo para que terminen hilos anteriores
+
             limpiarEstadoNivel(bomberman);
+            
+            bomberman.tiempoRestante = 10;
+            bomberman.puntaje = 0;
+
             bomberman.enModoMultijugador = false;
+            bomberman.tiempoRestante = 10;
             
             inicializarMapa(bomberman);
             colocarPowerups(bomberman);
@@ -1501,7 +1748,7 @@ int main() {
 
                     if (resultado >= 1 && resultado <= 5) {
                         bomberman.nivel = resultado;
-                        bomberman.tiempoRestante = 180;
+                        bomberman.tiempoRestante = 10;
                         
                         limpiarEstadoNivel(bomberman);
                         inicializarMapa(bomberman);
@@ -1541,22 +1788,41 @@ int main() {
                         bomberman.bombas.clear();
                         limpiarEstadoNivel(bomberman);
                         break; 
-                } 
+                }
                 nodelay(stdscr, TRUE);
+            }
+                pthread_mutex_lock(&mutex);
 
+                bool tiempoAgotado = (bomberman.tiempoRestante <= 0);
 
-                if(jugadorMuerto(bomberman.jugadores[0]) || bomberman.tiempoRestante <= 0) {
-                    nodelay(stdscr, FALSE);
+                pthread_mutex_unlock(&mutex);
+
+                if (jugadorMuerto(bomberman.jugadores[0]) ||
+                    tiempoAgotado)
+                {
                     bomberman.juegoActivo = false;
-                    sleep(1);
+
+                    usleep(200000);
+
+                    nodelay(stdscr, FALSE);
+
                     mostrarGameOverUnJugador(bomberman);
+
+                    flushinp();
+
+                    bomberman.tiempoRestante = 10;
+                    bomberman.juegoActivo = false;
+
+                    guardarPuntajesCSV(
+                        bomberman.jugadores[0].name,
+                        bomberman.puntaje
+                    );
+
                     jugando = false;
                     nivelActivo = false;
-                    guardarPuntajesCSV(bomberman.jugadores[0].name, bomberman.puntaje);
                 }
             }
         } 
-    }
 
         else if (opciones[seleccion] == "Dos jugadores") {
             bomberman.enModoMultijugador = true;
@@ -1632,7 +1898,7 @@ int main() {
                 limpiarEstadoNivel(bomberman);
                 bomberman.enModoMultijugador = false;
                 bomberman.nivel = nivelSeleccionado;
-                bomberman.tiempoRestante = 180;
+                bomberman.tiempoRestante = 10;
                 
                 inicializarMapa(bomberman);
                 colocarPowerups(bomberman);
@@ -1699,9 +1965,8 @@ int main() {
                     }
 
 
-                    if (bomberman.puerta.abierta &&
-                        bomberman.jugadores[0].x == bomberman.puerta.x &&
-                        bomberman.jugadores[0].y == bomberman.puerta.y) {
+                    if (bomberman.puerta.abierta && bomberman.jugadores[0].x == bomberman.puerta.x && bomberman.jugadores[0].y == bomberman.puerta.y) 
+                    {
                         
                         nodelay(stdscr, FALSE);
                         bomberman.juegoActivo = false;
@@ -1720,7 +1985,7 @@ int main() {
                         
                         if (resultado >= 1 && resultado <= 5) {
                             bomberman.nivel = resultado;
-                            bomberman.tiempoRestante = 180;
+                            bomberman.tiempoRestante = 10;
                             
                             limpiarEstadoNivel(bomberman);
                             inicializarMapa(bomberman);
@@ -1765,11 +2030,29 @@ int main() {
                     }
 
 
-                    if(jugadorMuerto(bomberman.jugadores[0]) || bomberman.tiempoRestante <= 0) {
-                        nodelay(stdscr, FALSE);
+                    bool tiempoAgotado = false;
+
+                    pthread_mutex_lock(&mutex);
+                    tiempoAgotado = (bomberman.tiempoRestante <= 0);
+                    pthread_mutex_unlock(&mutex);
+
+
+                    if (jugadorMuerto(bomberman.jugadores[0]) ||
+                        tiempoAgotado)
+                    {
                         bomberman.juegoActivo = false;
-                        sleep(1);
+
+                        usleep(200000);
+
+                        nodelay(stdscr, FALSE);
+
                         mostrarGameOverUnJugador(bomberman);
+
+                        guardarPuntajesCSV(
+                            bomberman.jugadores[0].name,
+                            bomberman.puntaje
+                        );
+
                         jugandoNivel = false;
                         nivelActivo = false;
                     }
@@ -1859,4 +2142,4 @@ int main() {
     sem_destroy(&sem2);
     
     return 0;
-};
+}
