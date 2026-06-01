@@ -1020,54 +1020,50 @@ int mostrarMenuSeleccionarNivel(const Juego& j) {
         erase();
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
-        mvprintw(max_y/2 - 8, max_x/2 - 15, "SELECCIONAR NIVEL"); // in bold
-        mvprintw(max_y/2  - 4, max_x/2 - 20, "Nivel maximo desbloqueado: %d", j.nivelMaximoDesbloqueado);
-        mvprintw(max_y/2 - 1, max_x/2 - 23, "Usa flechas y Enter ('Y' para salir)");
-        mvprintw(max_y/2 , max_x/2 - 15, "Selecciona un nivel:");
+
+        mvprintw(max_y/2 - 8, max_x/2 - 15, "SELECCIONAR NIVEL");
+        mvprintw(max_y/2 - 4, max_x/2 - 20,
+                 "Nivel maximo desbloqueado: %d",
+                 j.nivelMaximoDesbloqueado);
+        mvprintw(max_y/2 - 1, max_x/2 - 23,
+                 "Usa flechas y Enter ('Y' para salir)");
+        mvprintw(max_y/2, max_x/2 - 15,
+                 "Selecciona un nivel:");
 
         for (int i = 0; i < 5; i++) {
             bool desbloqueado = (i < j.nivelMaximoDesbloqueado);
 
-            if (i == seleccion) {
-                attron(A_REVERSE);
-            }
-            if (!desbloqueado) {
-                attron(A_DIM);
+            if (i == seleccion) attron(A_REVERSE);
+            if (!desbloqueado) attron(A_DIM);
 
-            }
-
-            if (desbloqueado) {
+            if (desbloqueado)
                 mvprintw(max_y/2 + 4 + i, max_x/2 - 15, "Nivel %d", i + 1);
-            } else {
+            else
                 mvprintw(max_y/2 + 4 + i, max_x/2 - 15, "Nivel %d (BLOQUEADO)", i + 1);
-            }
 
-            if (!desbloqueado) {
-                attroff(A_DIM);
-            }
-            if (i == seleccion) {
-                attroff(A_REVERSE);
-            }
+            if (!desbloqueado) attroff(A_DIM);
+            if (i == seleccion) attroff(A_REVERSE);
         }
 
         refresh();
+
         int input = getch();
 
         if (input == KEY_UP && seleccion > 0) {
             seleccion--;
         } else if (input == KEY_DOWN && seleccion < 4) {
             seleccion++;
-        } else if (input == 10) {  // Enter
-            if (seleccion < j.nivelMaximoDesbloqueado) {
+        } else if (input == 10) {
+            if (seleccion < j.nivelMaximoDesbloqueado)
                 return seleccion + 1;
-            }
             beep();
         } else if (input == 'y' || input == 'Y') {
+            flushinp();
             return -1;
         }
     }
 }
-// Pantalla cuando gana un nivel
+// Pantalla cuando gana un nivel// Pantalla cuando gana un nivel
 // Muestra todos los niveles desbloqueados disponibles para jugar
 int mostrarVictoriaUnJugador(Juego& j) {
     erase();
@@ -1295,7 +1291,7 @@ void imprimirCentrado(int y, const string& s) {
     mvprintw(y, xCentrado(max_x, (int)s.size()), "%s", s.c_str());
 }
 
-// Imprime un bloque multilínea (como tu ASCII art) centrado
+
 void imprimirBloqueCentrado(int y0, const string& block) {
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -1305,22 +1301,22 @@ void imprimirBloqueCentrado(int y0, const string& block) {
     int y = y0;
 
     while (getline(ss, line)) {
-        // (opcional) no imprimir líneas vacías al inicio
+
         mvprintw(y, xCentrado(max_x, (int)line.size()), "%s", line.c_str());
         y++;
     }
 }
-// Funcion principal
+
 int main() {
     setlocale(LC_ALL, "");
-    // Inicializar mutex
+
     pthread_mutex_init(&mutex, NULL);
     
-    //Inicializar semaforo
+
     sem_init(&sem1, 0, 3);
     sem_init(&sem2, 0, 3);
     
-    // Inicializar ncurses
+
     initscr();
     noecho();
     curs_set(0);
@@ -1329,18 +1325,18 @@ int main() {
     start_color();
     use_default_colors();
 
-    //agregar pares de colores para elementos
-    init_pair(1, COLOR_BLUE,    -1);  // muro fijo
-    init_pair(2, COLOR_YELLOW,  -1);  // muro rompible
-    init_pair(3, COLOR_GREEN,   -1);  // jugador
-    init_pair(4, COLOR_RED,     -1);  // enemigo
-    init_pair(5, COLOR_MAGENTA, -1);  // jefe
-    init_pair(6, COLOR_CYAN,    -1);  // puerta
-    init_pair(7, COLOR_WHITE,   -1);  // bomba normal
-    init_pair(8, COLOR_RED,  -1);  // explosión
-    init_pair(9, COLOR_GREEN,   -1);  // vida
-    init_pair(10,COLOR_CYAN,    -1);  // powerup
-    init_pair(11, COLOR_RED, -1);  // bomba parpadeando
+
+    init_pair(1, COLOR_BLUE,    -1);
+    init_pair(2, COLOR_YELLOW,  -1);
+    init_pair(3, COLOR_GREEN,   -1);
+    init_pair(4, COLOR_RED,     -1);
+    init_pair(5, COLOR_MAGENTA, -1);
+    init_pair(6, COLOR_CYAN,    -1);
+    init_pair(7, COLOR_WHITE,   -1);
+    init_pair(8, COLOR_RED,  -1);
+    init_pair(9, COLOR_GREEN,   -1);
+    init_pair(10,COLOR_CYAN,    -1);
+    init_pair(11, COLOR_RED, -1);
     
     Juego bomberman;
     bomberman.jugadores.clear(); 
@@ -1370,19 +1366,19 @@ int main() {
     int seleccion = 0;
     bool menu = true;
     nodelay(stdscr, FALSE);
-    // Bucle principal del menu
+
     while(menu){
     erase();
 
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // Dibuja titulo centrado desde y=1
+
     imprimirBloqueCentrado(1, titulo);
 
     int startY = 13;
 
-    // Opciones centradas
+
     for (int idx = 0; idx < (int)opciones.size(); idx++) {
         int y = startY + idx;
         int x = xCentrado(max_x, (int)opciones[idx].size());
@@ -1392,25 +1388,25 @@ int main() {
         if (idx == seleccion) attroff(A_REVERSE);
     }
 
-    // Instrucción centrada
+
     imprimirCentrado(startY + (int)opciones.size() + 2,
                     "Usa ▲ y ▼ para navegar y Enter para seleccionar");
 
     refresh();
     
-    // Obtener entrada del usuario
+
     input = getch();
     if (input == KEY_UP && seleccion > 0) {
-        seleccion--;  // Mover arriba
+        seleccion--;
     } else if (input == KEY_DOWN && seleccion < opciones.size() - 1) {
-        seleccion++;  // Mover abajo
+        seleccion++;
     } else if (input == ERR) {
         continue;
-    } else if (input == 10) {  // Enter presionado
+    } else if (input == 10) {
 
         bool jugando = true;
         
-        // Opcion: Un jugador
+
         if (opciones[seleccion] == "Un jugador") {
             limpiarEstadoNivel(bomberman);
             bomberman.enModoMultijugador = false;
@@ -1428,7 +1424,7 @@ int main() {
             
             pthread_t hiloEnems, hiloCrono, hiloAtaques;
             
-            // Hilo movimiento enemigos
+
             DataJuego* datosEnems = new DataJuego;
             datosEnems->juego = &bomberman;
             datosEnems->juegoActivo = &bomberman.juegoActivo;
@@ -1436,7 +1432,7 @@ int main() {
             pthread_create(&hiloEnems, NULL, hiloMovimientoEnemigos, datosEnems);
             pthread_detach(hiloEnems);
             
-            // Hilo cronometro
+
             DataJuego* datosCrono = new DataJuego;
             datosCrono->juego = &bomberman;
             datosCrono->juegoActivo = &bomberman.juegoActivo;
@@ -1444,7 +1440,7 @@ int main() {
             pthread_create(&hiloCrono, NULL, hiloCronometro, datosCrono);
             pthread_detach(hiloCrono);
             
-            // Hilo ataques enemigos
+
             DataJuego* datosAtaques = new DataJuego;
             datosAtaques->juego = &bomberman;
             datosAtaques->juegoActivo = &bomberman.juegoActivo;
@@ -1455,21 +1451,21 @@ int main() {
             
             bool nivelActivo = true;
             nodelay(stdscr, TRUE);
-            // Bucle de juego
+
             while(jugando && nivelActivo) {
                 dibujarMapa(bomberman, true);
 
                 int ch = getch();
                 if (ch != ERR) {
                 switch(ch) {
-                    // Movimiento
+
                     case 'w': case 'W': moverJugador(bomberman, 0, 0, -1); break;
                     case 's': case 'S': moverJugador(bomberman, 0, 0, 1); break;
                     case 'a': case 'A': moverJugador(bomberman, 0, -1, 0); break;
                     case 'd': case 'D': moverJugador(bomberman, 0, 1, 0); break;
-                    // Bomba
+
                     case 'e': case 'E': colocarBomba(bomberman, 0); break;
-                    // Salir
+
                     case 'y': case 'Y': 
                         jugando = false;
                         nivelActivo = false;
@@ -1478,7 +1474,7 @@ int main() {
                 }
                 }
 
-                // Verificar si llego a la puerta
+
                 if (bomberman.puerta.abierta &&
                     bomberman.jugadores[0].x == bomberman.puerta.x &&
                     bomberman.jugadores[0].y == bomberman.puerta.y) {
@@ -1487,11 +1483,11 @@ int main() {
                     bomberman.juegoActivo = false;
                     sleep(1);
                     
-                    // Acumular puntaje
+
                     bomberman.puntaje += (bomberman.tiempoRestante * 10) + 50;
                     guardarPuntajesCSV(bomberman.jugadores[0].name, bomberman.puntaje);
                     
-                    // Desbloquear siguiente nivel si es el actual
+
                     if (bomberman.nivel == bomberman.nivelMaximoDesbloqueado) {
                         bomberman.nivelMaximoDesbloqueado = bomberman.nivel + 1;
                         if (bomberman.nivelMaximoDesbloqueado > 5) {
@@ -1499,10 +1495,10 @@ int main() {
                         }
                     }
                     
-                    // Mostrar pantalla de victoria
+
                     int resultado = mostrarVictoriaUnJugador(bomberman);
                     
-                    // Si selecciono un nivel
+
                     if (resultado >= 1 && resultado <= 5) {
                         bomberman.nivel = resultado;
                         bomberman.tiempoRestante = 180;
@@ -1517,7 +1513,7 @@ int main() {
                         
                         bomberman.juegoActivo = true;
                         
-                        // Crear nuevos hilos
+
                         DataJuego* datosEnems2 = new DataJuego;
                         datosEnems2->juego = &bomberman;
                         datosEnems2->juegoActivo = &bomberman.juegoActivo;
@@ -1536,7 +1532,7 @@ int main() {
                         pthread_create(&hiloAtaques, NULL, hiloAtaqueEnemigos, datosAtaques2);
                         pthread_detach(hiloAtaques);
                         
-                    } else if (resultado == 6) {
+                    } else if (resultado == -1) {
                         jugando = false;
                         nivelActivo = false;
                         bomberman.puerta.abierta = false;
@@ -1548,7 +1544,7 @@ int main() {
                 } 
                 nodelay(stdscr, TRUE);
 
-                // Verificar game over
+
                 if(jugadorMuerto(bomberman.jugadores[0]) || bomberman.tiempoRestante <= 0) {
                     nodelay(stdscr, FALSE);
                     bomberman.juegoActivo = false;
@@ -1561,7 +1557,7 @@ int main() {
             }
         } 
     }
-        // Opcion: Dos jugadores
+
         else if (opciones[seleccion] == "Dos jugadores") {
             bomberman.enModoMultijugador = true;
             
@@ -1594,31 +1590,31 @@ int main() {
 
             
             
-            // Bucle de juego multijugador
+
             while(jugando) {
                 dibujarMapa(bomberman, false);
 
                 int ch = getch();
                 switch(ch) {
-                    // Player 1: WASD
+
                     case 'w': case 'W': moverJugador(bomberman, 0, 0, -1); break;
                     case 's': case 'S': moverJugador(bomberman, 0, 0, 1); break;
                     case 'a': case 'A': moverJugador(bomberman, 0, -1, 0); break;
                     case 'd': case 'D': moverJugador(bomberman, 0, 1, 0); break;
                     case 'e': case 'E': colocarBomba(bomberman, 0); break;
 
-                    // Player 2: IJKL
+
                     case 'i': case 'I': moverJugador(bomberman, 1, 0, -1); break;
                     case 'k': case 'K': moverJugador(bomberman, 1, 0, 1); break;
                     case 'j': case 'J': moverJugador(bomberman, 1, -1, 0); break;
                     case 'l': case 'L': moverJugador(bomberman, 1, 1, 0); break;
                     case 'o': case 'O': colocarBomba(bomberman, 1); break;
 
-                    // Salir
+
                     case 'y': case 'Y': jugando = false; break;
                 }
                 
-                // Verificar si alguien murio
+
                 if (jugadorMuerto(bomberman.jugadores[0]) || jugadorMuerto(bomberman.jugadores[1])) {
                     nodelay(stdscr, FALSE);
                     bomberman.juegoActivo = false;
@@ -1629,7 +1625,7 @@ int main() {
             }
         }
         
-        // Opcion: Seleccionar Nivel
+
         else if (opciones[seleccion] == "Seleccionar Nivel") {
             int nivelSeleccionado = mostrarMenuSeleccionarNivel(bomberman);
             if (nivelSeleccionado != -1) {
@@ -1677,7 +1673,7 @@ int main() {
                 bool nivelActivo = true;
                 bool jugandoNivel = true;
                 
-                // Bucle del nivel seleccionado
+
                 while(jugandoNivel && nivelActivo) {
                     dibujarMapa(bomberman, true);
 
@@ -1702,7 +1698,7 @@ int main() {
                             break;
                     }
 
-                    // Verificar si llego a puerta
+
                     if (bomberman.puerta.abierta &&
                         bomberman.jugadores[0].x == bomberman.puerta.x &&
                         bomberman.jugadores[0].y == bomberman.puerta.y) {
@@ -1755,7 +1751,7 @@ int main() {
                             pthread_detach(hiloAtaques);
                             
                             
-                        } else if (resultado == 6) {
+                        } else if (resultado == -1) {
                             jugando = false;
                             nivelActivo = false;
                             bomberman.puerta.abierta = false;
@@ -1768,7 +1764,7 @@ int main() {
                         nodelay(stdscr, TRUE);
                     }
 
-                    // Verificar game over
+
                     if(jugadorMuerto(bomberman.jugadores[0]) || bomberman.tiempoRestante <= 0) {
                         nodelay(stdscr, FALSE);
                         bomberman.juegoActivo = false;
@@ -1781,7 +1777,7 @@ int main() {
             }
         }
         
-        // Opcion: Controles
+
         else if (opciones[seleccion] == "Controles") {
             nodelay(stdscr, FALSE);
             clear();
@@ -1796,7 +1792,7 @@ int main() {
             nodelay(stdscr, TRUE);
         }
         
-        // Opcion: Reglas
+
         else if (opciones[seleccion] == "Reglas") {
             nodelay(stdscr, FALSE);
             clear();
@@ -1831,7 +1827,7 @@ int main() {
             nodelay(stdscr, TRUE);
         }
         
-        // Opcion: Puntajes
+
         else if (opciones[seleccion] == "Puntajes") {
             nodelay(stdscr, FALSE);
             clear();
@@ -1844,7 +1840,7 @@ int main() {
             nodelay(stdscr, TRUE);
         }
         
-        // Opcion: Salir
+
         else if (opciones[seleccion] == "Salir") {
             jugando = false;
             menu = false;
@@ -1852,13 +1848,13 @@ int main() {
     }
     }
     
-    // Limpiar ncurses
+
     endwin();
     
-    // Destruir mutex
+
     pthread_mutex_destroy(&mutex);
     
-    //Destruir semaforo
+
     sem_destroy(&sem1);
     sem_destroy(&sem2);
     
